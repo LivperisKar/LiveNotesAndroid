@@ -3,6 +3,7 @@ package gr.livperiskar.livenotes
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -11,7 +12,11 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -60,12 +65,11 @@ fun LiveNotesEditorScreen() {
     var isFocused by remember { mutableStateOf(false) }
     var isTyping by remember { mutableStateOf(false) }
 
-    // Όποτε αλλάζει το κείμενο → θεωρούμε ότι πληκτρολογεί
+    // Debounce πληκτρολόγησης
     LaunchedEffect(text) {
         if (isFocused) {
             isTyping = true
             val currentText = text
-            // περιμένουμε 0.8s – αν το κείμενο δεν έχει αλλάξει, σταμάτησε να γράφει
             delay(800)
             if (text == currentText) {
                 isTyping = false
@@ -75,7 +79,7 @@ fun LiveNotesEditorScreen() {
         }
     }
 
-    // animation για αναβόσβημα όταν δεν έχει focus
+    // Αναβόσβημα για κατάσταση αναμονής
     val infiniteTransition = rememberInfiniteTransition(label = "wait_indicator")
     val blinkAlpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
@@ -87,68 +91,90 @@ fun LiveNotesEditorScreen() {
         label = "alpha_anim"
     )
 
-    // χρώμα:
-    //  - μπλε/γαλάζιο μόνο όταν γράφει
-    //  - πράσινο όταν δεν γράφει (είτε πριν το tap, είτε μετά το σταμάτημα)
-    val indicatorColor = if (isTyping) {
+    // Στόχος χρώματος (χωρίς animation)
+    val targetColor = if (isTyping) {
         Color(0xFF00FFFF) // typing: γαλάζιο
     } else {
         Color(0xFF00FF00) // idle: πράσινο
     }
 
-    // alpha:
-    //  - αναβοσβήνει όταν δεν έχει focus (περιμένει πρώτο tap)
-    //  - σταθερό όταν έχει focus (είτε γράφει είτε όχι)
-    val indicatorAlpha = if (!isFocused) blinkAlpha else 1f
+    // Ομαλή μετάβαση χρώματος μεταξύ πράσινου ↔ γαλάζιου
+    val animatedColor by animateColorAsState(
+        targetValue = targetColor,
+        animationSpec = tween(durationMillis = 400, easing = LinearEasing),
+        label = "indicator_color"
+    )
+
+    // Alpha: σταθερό όταν γράφει, αναβοσβήνει όταν είναι idle
+    val indicatorAlpha = if (isTyping) 1f else blinkAlpha
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)   // μαύρο φόντο
+            .background(Color.Black)
             .imePadding()
             .padding(16.dp)
     ) {
-        TextField(
-            value = text,
-            onValueChange = { newText ->
-                text = newText
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .onFocusChanged { focusState ->
-                    isFocused = focusState.isFocused
-                },
-            textStyle = TextStyle(
-                color = Color.White,
-                fontSize = 18.sp
-            ),
-            singleLine = false,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Black,
-                unfocusedContainerColor = Color.Black,
-                disabledContainerColor = Color.Black,
-                cursorColor = Color.Red,                     // κόκκινος κέρσορας
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent
-            ),
-            placeholder = {
-                Text(
-                    text = "",
-                    color = Color.Gray,
-                    fontSize = 18.sp
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Επάνω μπάρα (ύψος περίπου μιας γραμμής) με φωτάκι δεξιά
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)       // μικρό, διακριτικό φωτάκι
+                        .alpha(indicatorAlpha)
+                        .background(animatedColor, CircleShape)
                 )
             }
-        )
 
-        // φωτάκι κατάστασης – πάντα ορατό
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .size(10.dp)
-                .alpha(indicatorAlpha)
-                .background(indicatorColor, CircleShape)
-        )
+            // Editor area (κενό μιας γραμμής πάνω από το κείμενο)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+            ) {
+                TextField(
+                    value = text,
+                    onValueChange = { newText ->
+                        text = newText
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onFocusChanged { focusState ->
+                            isFocused = focusState.isFocused
+                        },
+                    textStyle = TextStyle(
+                        color = Color.White,
+                        fontSize = 18.sp
+                    ),
+                    singleLine = false,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Black,
+                        unfocusedContainerColor = Color.Black,
+                        disabledContainerColor = Color.Black,
+                        cursorColor = Color.Red,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent
+                    ),
+                    placeholder = {
+                        Text(
+                            text = "",
+                            color = Color.Gray,
+                            fontSize = 18.sp
+                        )
+                    }
+                )
+            }
+        }
     }
 }
