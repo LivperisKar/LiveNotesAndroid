@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,8 +48,8 @@ fun LiveNotesEditorScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212)) // προσωρινό dark background
-            .imePadding()                  // ΣΗΜΑΝΤΙΚΟ: “σπρώχνει” το περιεχόμενο πάνω από το keyboard
+            .background(Color.Black) // ΜΑΥΡΟ φόντο σε όλη την οθόνη
+            .imePadding()
             .padding(16.dp)
     ) {
         TextField(
@@ -60,6 +61,15 @@ fun LiveNotesEditorScreen() {
                 fontSize = 18.sp
             ),
             singleLine = false,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Black,
+                unfocusedContainerColor = Color.Black,
+                disabledContainerColor = Color.Black,
+                cursorColor = Color.Red,                     // ΚΟΚΚΙΝΟΣ κέρσορας
+                focusedIndicatorColor = Color.Transparent,   // χωρίς underline
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
+            ),
             placeholder = {
                 Text(
                     text = "",
