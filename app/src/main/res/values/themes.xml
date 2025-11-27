@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Livenotes" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Main app theme -->
+    <style name="Theme.LiveNotesAndroid" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Μαύρο φόντο για όλο το window -->
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
 </resources>
