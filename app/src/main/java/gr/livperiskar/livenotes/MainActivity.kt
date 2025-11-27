@@ -113,23 +113,39 @@ fun LiveNotesEditorScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)   // κύριο φόντο
-            .imePadding()              // για να μην κρύβεται από το keyboard
+            .imePadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // HEADER με διαφορετικό φόντο, χωρίς καθόλου margin από τα άκρα
+            // HEADER: άλλο φόντο, χωρίς margin από την οθόνη
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
-                    .background(Color(0xFF111111))   // πιο ανοιχτό σκούρο από το μαύρο
+                    .background(Color(0xFF111111))   // λίγο πιο ανοιχτό σκούρο
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                              // Μολύβι νέας σημείωσης (πλάγιο)
+                                Box(
+                                    modifier = Modifier.size(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "✎",           // πλάγιο μολύβι
+                                        color = Color.White,
+                                        fontSize = 18.sp
+                                    )
+                                }
+
+
+                // Κενός χώρος στη μέση
                 Box(
                     modifier = Modifier.weight(1f)
                 )
+
+                // Φωτάκι κατάστασης (δεξιά)
                 Box(
                     modifier = Modifier
                         .size(4.dp)
@@ -165,7 +181,7 @@ fun LiveNotesEditorScreen() {
                         focusedContainerColor = Color.Black,
                         unfocusedContainerColor = Color.Black,
                         disabledContainerColor = Color.Black,
-                        cursorColor = Color.Red,
+                        cursorColor = Color.Red,                     // κόκκινος κέρσορας
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent
