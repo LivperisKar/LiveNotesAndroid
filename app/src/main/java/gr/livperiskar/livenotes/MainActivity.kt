@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -79,7 +80,7 @@ fun LiveNotesEditorScreen() {
         }
     }
 
-    // Αναβόσβημα για κατάσταση αναμονής
+    // Αναβόσβημα όταν είναι σε αναμονή
     val infiniteTransition = rememberInfiniteTransition(label = "wait_indicator")
     val blinkAlpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
@@ -91,39 +92,39 @@ fun LiveNotesEditorScreen() {
         label = "alpha_anim"
     )
 
-    // Στόχος χρώματος (χωρίς animation)
+    // Στόχος χρώματος φωτακίου (πράσινο / γαλάζιο)
     val targetColor = if (isTyping) {
         Color(0xFF00FFFF) // typing: γαλάζιο
     } else {
         Color(0xFF00FF00) // idle: πράσινο
     }
 
-    // Ομαλή μετάβαση χρώματος μεταξύ πράσινου ↔ γαλάζιου
+    // Ομαλή μετάβαση χρώματος
     val animatedColor by animateColorAsState(
         targetValue = targetColor,
         animationSpec = tween(durationMillis = 400, easing = LinearEasing),
         label = "indicator_color"
     )
 
-    // Alpha: σταθερό όταν γράφει, αναβοσβήνει όταν είναι idle
+    // Alpha: σταθερό όταν γράφει, αναβοσβήνει όταν idle
     val indicatorAlpha = if (isTyping) 1f else blinkAlpha
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .imePadding()
-            .padding(16.dp)
+            .background(Color.Black)   // κύριο φόντο
+            .imePadding()              // για να μην κρύβεται από το keyboard
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Επάνω μπάρα (ύψος περίπου μιας γραμμής) με φωτάκι δεξιά
+            // HEADER με διαφορετικό φόντο, χωρίς καθόλου margin από τα άκρα
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(24.dp)
-                    .padding(horizontal = 4.dp),
+                    .height(40.dp)
+                    .background(Color(0xFF111111))   // πιο ανοιχτό σκούρο από το μαύρο
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -131,13 +132,16 @@ fun LiveNotesEditorScreen() {
                 )
                 Box(
                     modifier = Modifier
-                        .size(4.dp)       // μικρό, διακριτικό φωτάκι
+                        .size(4.dp)
                         .alpha(indicatorAlpha)
                         .background(animatedColor, CircleShape)
                 )
             }
 
-            // Editor area (κενό μιας γραμμής πάνω από το κείμενο)
+            // Μικρό κενό ανάμεσα στο header και το κείμενο
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Περιοχή editor
             Box(
                 modifier = Modifier
                     .weight(1f)
