@@ -11,6 +11,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,7 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,6 +42,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import gr.livperiskar.livenotes.ui.theme.LivenotesTheme
@@ -118,49 +122,72 @@ fun LiveNotesEditorScreen() {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // HEADER: άλλο φόντο, χωρίς margin από την οθόνη
+            // HEADER: μόνο μολύβι αριστερά και φωτάκι δεξιά
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp)
-                    .background(Color(0xFF111111))   // λίγο πιο ανοιχτό σκούρο
+                    .height(56.dp)
+                    .background(Color(0xFF111111))
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                              // Μολύβι νέας σημείωσης (πλάγιο)
-                                Box(
-                                    modifier = Modifier.size(24.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "✎",           // πλάγιο μολύβι
-                                        color = Color.White,
-                                        fontSize = 18.sp
-                                    )
-                                }
-
-
-                // Κενός χώρος στη μέση
-                Box(
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Φωτάκι κατάστασης (δεξιά)
+                // Μολύβι νέας σημείωσης (πλάγιο, click → καθαρισμός editor)
                 Box(
                     modifier = Modifier
-                        .size(4.dp)
-                        .alpha(indicatorAlpha)
-                        .background(animatedColor, CircleShape)
-                )
+                        .size(24.dp)
+                        .clickable {
+                            text = ""      // καθαρίζει τον text editor
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "✎",
+                        color = Color(0xFF00FFFF),
+                        fontSize = 20.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Μπορούμε να αφήσουμε κενό ή μελλοντικά να μπει τίτλος
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Μικρό status chip ΜΟΝΟ με φωτάκι
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color(0xFF202020),
+                            shape = RoundedCornerShape(999.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .alpha(indicatorAlpha)
+                            .background(animatedColor, CircleShape)
+                    )
+                }
             }
 
-            // Μικρό κενό ανάμεσα στο header και το κείμενο
+            // Μικρό κενό ανάμεσα στο header και το “φύλλο” της σημείωσης
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Περιοχή editor
+            // "Φύλλο" σημείωσης
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .fillMaxWidth()
+                    .background(
+                        color = Color(0xFF050505),
+                        shape = RoundedCornerShape(
+                            topStart = 18.dp,
+                            topEnd = 18.dp,
+                            bottomStart = 0.dp,
+                            bottomEnd = 0.dp
+                        )
+                    )
             ) {
                 TextField(
                     value = text,
@@ -169,18 +196,21 @@ fun LiveNotesEditorScreen() {
                     },
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                         .onFocusChanged { focusState ->
                             isFocused = focusState.isFocused
                         },
                     textStyle = TextStyle(
                         color = Color.White,
-                        fontSize = 18.sp
+                        fontSize = 17.sp,
+                        lineHeight = 24.sp,
+                        fontFamily = FontFamily.SansSerif
                     ),
                     singleLine = false,
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Black,
-                        unfocusedContainerColor = Color.Black,
-                        disabledContainerColor = Color.Black,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
                         cursorColor = Color.Red,                     // κόκκινος κέρσορας
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
@@ -188,9 +218,11 @@ fun LiveNotesEditorScreen() {
                     ),
                     placeholder = {
                         Text(
-                            text = "",
+                            // αν το θες ελληνικά: "Γράψε νέα σημείωση..."
+                            text = "Write a new note...",
                             color = Color.Gray,
-                            fontSize = 18.sp
+                            fontSize = 17.sp,
+                            fontFamily = FontFamily.SansSerif
                         )
                     }
                 )
