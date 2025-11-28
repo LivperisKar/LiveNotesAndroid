@@ -1,13 +1,6 @@
 package gr.livperiskar.livenotes
 
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.foundation.clickable
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,22 +13,29 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,75 +43,124 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import gr.livperiskar.livenotes.ui.theme.LivenotesTheme
 import kotlinx.coroutines.delay
-import androidx.compose.foundation.layout.BoxWithConstraints
+import kotlinx.coroutines.launch
+
+// DataStore imports
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.map
+
+/* --------------------- THEME SETUP --------------------- */
+
+enum class AppTheme {
+    Dark,
+    Light
+}
+
+// Extension property για DataStore
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val THEME_KEY = stringPreferencesKey("app_theme")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // DataStore εκτός composables
+        val dataStore = applicationContext.dataStore
+
+        // Flow που διαβάζει το αποθηκευμένο θέμα
+        val themeFlow = dataStore.data.map { prefs ->
+            when (prefs[THEME_KEY]) {
+                "light" -> AppTheme.Light
+                else -> AppTheme.Dark   // default: το δικό σου dark
+            }
+        }
+
         setContent {
+            val currentTheme by themeFlow.collectAsState(initial = AppTheme.Dark)
+            val scope = rememberCoroutineScope()
+
+            val onThemeChange: (AppTheme) -> Unit = { newTheme ->
+                scope.launch {
+                    dataStore.edit { prefs ->
+                        prefs[THEME_KEY] = when (newTheme) {
+                            AppTheme.Dark -> "dark"
+                            AppTheme.Light -> "light"
+                        }
+                    }
+                }
+            }
+
             LivenotesTheme {
+                val windowColor =
+                    if (currentTheme == AppTheme.Dark) Color.Black else Color(0xFFF5F5F5)
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black
+                    color = windowColor
                 ) {
-                    MainScreenRoot()
+                    MainScreenRoot(
+                        currentTheme = currentTheme,
+                        onThemeChange = onThemeChange
+                    )
                 }
             }
         }
     }
 }
 
-/* --------------------- ROOT ΜΕ DRAWER SWIPE --------------------- */
+/* --------------------- ROOT ΜΕ DRAWER --------------------- */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenRoot() {
+fun MainScreenRoot(
+    currentTheme: AppTheme,
+    onThemeChange: (AppTheme) -> Unit
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        scrimColor = Color.Black.copy(alpha = 0.4f), // ελαφρύ dim πάνω από τον editor
+        scrimColor = Color.Black.copy(alpha = 0.4f),
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(max = 320.dp),             // max πλάτος drawer
-                drawerContainerColor = Color.Black      // ίδιο dark style
+                    .widthIn(max = 320.dp),
+                drawerContainerColor =
+                    if (currentTheme == AppTheme.Dark) Color.Black else Color.White
             ) {
-                // η λίστα σημειώσεων μέσα στο drawer
-                NotesListScreen()
+                NotesListScreen(
+                    currentTheme = currentTheme,
+                    onThemeChange = onThemeChange
+                )
             }
         }
     ) {
-        // Κύρια οθόνη: ο editor
-        LiveNotesEditorScreen()
+        LiveNotesEditorScreen(currentTheme = currentTheme)
     }
 }
-
 
 /* --------------------- EDITOR SCREEN --------------------- */
 
 @Composable
-fun LiveNotesEditorScreen() {
+fun LiveNotesEditorScreen(currentTheme: AppTheme) {
     var text by remember { mutableStateOf("") }
     var isFocused by remember { mutableStateOf(false) }
     var isTyping by remember { mutableStateOf(false) }
 
-    // Debounce πληκτρολόγησης
     LaunchedEffect(text) {
         if (isFocused) {
             isTyping = true
@@ -125,7 +174,6 @@ fun LiveNotesEditorScreen() {
         }
     }
 
-    // Αναβόσβημα όταν είναι σε αναμονή
     val infiniteTransition = rememberInfiniteTransition(label = "wait_indicator")
     val blinkAlpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
@@ -138,9 +186,9 @@ fun LiveNotesEditorScreen() {
     )
 
     val targetColor = if (isTyping) {
-        Color(0xFF00FFFF) // typing: γαλάζιο
+        Color(0xFF00FFFF)
     } else {
-        Color(0xFF00FF00) // idle: πράσινο
+        Color(0xFF00FF00)
     }
 
     val animatedColor by animateColorAsState(
@@ -151,20 +199,27 @@ fun LiveNotesEditorScreen() {
 
     val indicatorAlpha = if (isTyping) 1f else blinkAlpha
 
+    val headerBg =
+        if (currentTheme == AppTheme.Dark) Color(0xFF111111) else Color(0xFFEFEFEF)
+    val sheetBg =
+        if (currentTheme == AppTheme.Dark) Color(0xFF050505) else Color.White
+    val textColor =
+        if (currentTheme == AppTheme.Dark) Color.White else Color(0xFF111111)
+    val placeholderColor =
+        if (currentTheme == AppTheme.Dark) Color.Gray else Color(0xFF888888)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        // HEADER
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .background(Color(0xFF111111))
+                .background(headerBg)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Μολύβι νέας σημείωσης (καθαρίζει editor)
             Box(
                 modifier = Modifier
                     .size(24.dp)
@@ -181,14 +236,14 @@ fun LiveNotesEditorScreen() {
             }
 
             Spacer(modifier = Modifier.width(8.dp))
-
             Spacer(modifier = Modifier.weight(1f))
 
-            // Capsule με φωτάκι
             Box(
                 modifier = Modifier
                     .background(
-                        color = Color(0xFF202020),
+                        color = if (currentTheme == AppTheme.Dark) Color(0xFF202020) else Color(
+                            0xFFD0D0D0
+                        ),
                         shape = RoundedCornerShape(999.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -205,13 +260,12 @@ fun LiveNotesEditorScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // "Φύλλο" σημείωσης
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .background(
-                    color = Color(0xFF050505),
+                    color = sheetBg,
                     shape = RoundedCornerShape(
                         topStart = 18.dp,
                         topEnd = 18.dp,
@@ -232,7 +286,7 @@ fun LiveNotesEditorScreen() {
                         isFocused = focusState.isFocused
                     },
                 textStyle = TextStyle(
-                    color = Color.White,
+                    color = textColor,
                     fontSize = 17.sp,
                     lineHeight = 24.sp,
                     fontFamily = FontFamily.SansSerif
@@ -250,7 +304,7 @@ fun LiveNotesEditorScreen() {
                 placeholder = {
                     Text(
                         text = "Write a new note...",
-                        color = Color.Gray,
+                        color = placeholderColor,
                         fontSize = 17.sp,
                         fontFamily = FontFamily.SansSerif
                     )
@@ -271,7 +325,10 @@ data class NotePreview(
 )
 
 @Composable
-fun NotesListScreen() {
+fun NotesListScreen(
+    currentTheme: AppTheme,
+    onThemeChange: (AppTheme) -> Unit
+) {
     val notes = remember {
         listOf(
             NotePreview(
@@ -310,15 +367,15 @@ fun NotesListScreen() {
 
     var selectedIds by remember { mutableStateOf(setOf<Int>()) }
     val selectionMode = selectedIds.isNotEmpty()
-
-    // state για toggle μεταξύ λίστας & ρυθμίσεων
     var showSettings by remember { mutableStateOf(false) }
+
+    val headerTextColor =
+        if (currentTheme == AppTheme.Dark) Color.White else Color(0xFF111111)
 
     Column(
         modifier = Modifier
             .fillMaxHeight()
     ) {
-        // Header: All notes + δεξιά icon
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -328,7 +385,7 @@ fun NotesListScreen() {
         ) {
             Text(
                 text = "All notes",
-                color = Color.White,
+                color = headerTextColor,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.SansSerif
@@ -337,32 +394,33 @@ fun NotesListScreen() {
             Spacer(modifier = Modifier.weight(1f))
 
             if (!selectionMode) {
-                // ⚙ / ☰ toggle
                 Box(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(RoundedCornerShape(999.dp))
                         .clickable {
                             showSettings = !showSettings
-                            // προαιρετικά, καθάρισε επιλογή αν είχες
                             selectedIds = emptySet()
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = if (showSettings) "☰" else "⚙",
-                        color = Color.White,
+                        color = headerTextColor,
                         fontSize = 18.sp
                     )
                 }
             } else {
-                // Εικονίδιο διαγραφής όταν υπάρχει επιλογή
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
-                        .background(Color(0xFF401818))
+                        .background(
+                            if (currentTheme == AppTheme.Dark)
+                                Color(0xFF401818)
+                            else
+                                Color(0xFFFFE0E0)
+                        )
                         .clickable {
-                            // προς το παρόν: απλά καθαρίζει την επιλογή
                             selectedIds = emptySet()
                         }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -370,7 +428,7 @@ fun NotesListScreen() {
                 ) {
                     Text(
                         text = "🗑",
-                        color = Color.White,
+                        color = headerTextColor,
                         fontSize = 16.sp
                     )
                 }
@@ -378,10 +436,11 @@ fun NotesListScreen() {
         }
 
         if (showSettings) {
-            // Εμφάνιση ρυθμίσεων αντί για λίστα
-            NotesSettingsView()
+            NotesSettingsView(
+                currentTheme = currentTheme,
+                onThemeChange = onThemeChange
+            )
         } else {
-            // Κανονική λίστα σημειώσεων
             LazyColumn(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -393,6 +452,7 @@ fun NotesListScreen() {
                     NoteListItem(
                         note = note,
                         isSelected = isSelected,
+                        currentTheme = currentTheme,
                         onClick = {
                             if (selectionMode) {
                                 selectedIds =
@@ -416,8 +476,17 @@ fun NotesListScreen() {
     }
 }
 
+/* --------------------- SETTINGS VIEW --------------------- */
+
 @Composable
-fun NotesSettingsView() {
+fun NotesSettingsView(
+    currentTheme: AppTheme,
+    onThemeChange: (AppTheme) -> Unit
+) {
+    val textColor =
+        if (currentTheme == AppTheme.Dark) Color.White else Color(0xFF111111)
+    val secondaryColor = textColor.copy(alpha = 0.6f)
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -426,7 +495,7 @@ fun NotesSettingsView() {
     ) {
         Text(
             text = "Settings",
-            color = Color.White,
+            color = textColor,
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.SansSerif
@@ -436,17 +505,23 @@ fun NotesSettingsView() {
 
         SettingsRow(
             title = "Auto-save",
-            subtitle = "Save notes while typing"
+            subtitle = "Save notes while typing",
+            titleColor = textColor,
+            subtitleColor = secondaryColor
         )
 
         SettingsRow(
             title = "Sort notes",
-            subtitle = "Newest first"
+            subtitle = "Newest first",
+            titleColor = textColor,
+            subtitleColor = secondaryColor
         )
 
-        SettingsRow(
-            title = "Theme",
-            subtitle = "Dark"
+        ThemeSettingsRow(
+            currentTheme = currentTheme,
+            onThemeChange = onThemeChange,
+            titleColor = textColor,
+            subtitleColor = secondaryColor
         )
     }
 }
@@ -454,7 +529,9 @@ fun NotesSettingsView() {
 @Composable
 fun SettingsRow(
     title: String,
-    subtitle: String
+    subtitle: String,
+    titleColor: Color,
+    subtitleColor: Color
 ) {
     Column(
         modifier = Modifier
@@ -463,7 +540,7 @@ fun SettingsRow(
     ) {
         Text(
             text = title,
-            color = Color.White,
+            color = titleColor,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = FontFamily.SansSerif
@@ -471,22 +548,92 @@ fun SettingsRow(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = subtitle,
-            color = Color.White.copy(alpha = 0.6f),
+            color = subtitleColor,
             fontSize = 12.sp,
             fontFamily = FontFamily.SansSerif
         )
     }
 }
 
+@Composable
+fun ThemeSettingsRow(
+    currentTheme: AppTheme,
+    onThemeChange: (AppTheme) -> Unit,
+    titleColor: Color,
+    subtitleColor: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable {
+                val newTheme =
+                    if (currentTheme == AppTheme.Dark) AppTheme.Light else AppTheme.Dark
+                onThemeChange(newTheme)
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = "Theme",
+                color = titleColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.SansSerif
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = if (currentTheme == AppTheme.Dark) "Dark" else "Light",
+                color = subtitleColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(
+                    if (currentTheme == AppTheme.Dark) Color(0xFF222233) else Color(0xFFE0E0E0)
+                )
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = if (currentTheme == AppTheme.Dark) "Switch to Light" else "Switch to Dark",
+                color = titleColor,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+        }
+    }
+}
+
+/* --------------------- NOTE LIST ITEM --------------------- */
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NoteListItem(
     note: NotePreview,
     isSelected: Boolean,
+    currentTheme: AppTheme,
     onClick: () -> Unit,
     onLongPress: () -> Unit
 ) {
-    val bgColor = if (isSelected) Color(0xFF222233) else Color(0xFF111111)
+    val baseBg =
+        if (currentTheme == AppTheme.Dark) Color(0xFF111111) else Color(0xFFF0F0F0)
+    val selectedBg =
+        if (currentTheme == AppTheme.Dark) Color(0xFF222233) else Color(0xFFE0E0FF)
+    val bgColor = if (isSelected) selectedBg else baseBg
+
+    val cardInnerBg =
+        if (currentTheme == AppTheme.Dark) Color(0xFF222222) else Color(0xFFE5E5E5)
+    val mainTextColor =
+        if (currentTheme == AppTheme.Dark) Color.White else Color(0xFF111111)
+    val previewTextColor = mainTextColor.copy(alpha = 0.7f)
+    val timestampColor = mainTextColor.copy(alpha = 0.5f)
 
     Row(
         modifier = Modifier
@@ -505,12 +652,12 @@ fun NoteListItem(
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF222222)),
+                .background(cardInnerBg),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "📝",
-                color = Color.White,
+                color = mainTextColor,
                 fontSize = 16.sp
             )
         }
@@ -524,7 +671,7 @@ fun NoteListItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = note.title,
-                    color = Color.White,
+                    color = mainTextColor,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = FontFamily.SansSerif,
@@ -546,7 +693,7 @@ fun NoteListItem(
 
             Text(
                 text = note.preview,
-                color = Color.White.copy(alpha = 0.7f),
+                color = previewTextColor,
                 fontSize = 12.sp,
                 fontFamily = FontFamily.SansSerif,
                 maxLines = 2,
@@ -557,7 +704,7 @@ fun NoteListItem(
 
             Text(
                 text = note.timestamp,
-                color = Color.White.copy(alpha = 0.5f),
+                color = timestampColor,
                 fontSize = 11.sp,
                 fontFamily = FontFamily.SansSerif
             )
@@ -571,7 +718,7 @@ fun NoteListItem(
         ) {
             Text(
                 text = "⋯",
-                color = Color.White.copy(alpha = 0.5f),
+                color = timestampColor,
                 fontSize = 14.sp
             )
         }
