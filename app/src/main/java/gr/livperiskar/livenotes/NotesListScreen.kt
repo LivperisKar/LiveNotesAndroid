@@ -12,6 +12,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -25,8 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.ColumnScope
 import gr.livperiskar.livenotes.data.NoteEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun NotesListScreen(
@@ -238,66 +241,98 @@ private fun SearchBar(
         Color(0xFF6B6C7B)
     }
 
+    val cursorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
+        Color(0xFF43E9A9)
+    } else {
+        Color(0xFF00A37F)
+    }
+
+    // 🔹 ΚΟΙΝΟ style για input + placeholder
+    val inputTextStyle = TextStyle(
+        color = textColor,
+        fontSize = 14.sp,
+        lineHeight = 18.sp,
+        fontFamily = FontFamily.SansSerif
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(999.dp))
-            .background(bgColor)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Filled.Search,
-            contentDescription = "Search",
-            tint = placeholderColor
-        )
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
+        Box(
             modifier = Modifier
-                .weight(1f)
-                .padding(end = 4.dp),
-            singleLine = true,
-            textStyle = TextStyle(
-                color = textColor,
-                fontSize = 14.sp,
-                fontFamily = FontFamily.SansSerif
-            ),
-            placeholder = {
-                Text(
-                    text = "Search notes...",
-                    color = placeholderColor,
-                    fontSize = 14.sp,
-                    fontFamily = FontFamily.SansSerif
+                .fillMaxWidth()
+                .height(40.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(bgColor)
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = "Search",
+                    tint = placeholderColor,
+                    modifier = Modifier.size(18.dp)
                 )
-            },
-            trailingIcon = {
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        singleLine = true,
+                        textStyle = inputTextStyle,
+                        cursorBrush = SolidColor(cursorColor),
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (value.isEmpty()) {
+                                Text(
+                                    text = "Search notes...",
+                                    // 🔹 ίδιο style, απλά άλλο χρώμα
+                                    style = inputTextStyle.copy(color = placeholderColor),
+                                    maxLines = 1
+                                )
+                            }
+                            innerTextField()
+                        }
+                    )
+                }
+
                 if (value.isNotEmpty()) {
-                    IconButton(onClick = { onValueChange("") }) {
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { onValueChange("") },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Clear search",
-                            tint = placeholderColor
+                            tint = placeholderColor,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
-            },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                disabledContainerColor = Color.Transparent,
-                cursorColor = textColor,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent
-            )
-        )
+            }
+        }
     }
 }
+
+
+
 
 @Composable
 fun NotesSettingsView(
@@ -718,6 +753,11 @@ fun NoteListItem(
         Color(0xFF9A9BA5)
     }
 
+    val createdDateText = remember(note.createdAt) {
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        formatter.format(Date(note.createdAt))
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -775,7 +815,7 @@ fun NoteListItem(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Last updated: ${note.updatedAt}",
+                text = "Created: $createdDateText",
                 color = timestampColor,
                 fontSize = 11.sp,
                 fontFamily = FontFamily.SansSerif
