@@ -29,12 +29,13 @@ class MainActivity : ComponentActivity() {
         private const val KEY_START_MODE = "start_mode"
         private const val KEY_WAVEFORM_STYLE = "waveform_style"
 
-        // Defaults
-        private val DEFAULT_CURSOR_COLOR_DARK = 0xFF43E9A9.toInt()
+        // Defaults – ΜΟΝΟ παλέτα
+        private val DEFAULT_CURSOR_COLOR_DARK = 0xFF01A340.toInt()   // green
         private const val DEFAULT_CURSOR_SCALE_DARK = 1.0f
-        private val DEFAULT_INDICATOR_COLOR_DARK = 0xFF00FF00.toInt()
+        private val DEFAULT_INDICATOR_COLOR_DARK = 0xFFE0AC00.toInt() // yellow
         private const val DEFAULT_INDICATOR_SCALE_DARK = 1.0f
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,8 +61,8 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = when (currentTheme) {
-                        AppTheme.LIVENOTES_DARK -> Color(0xFF050505)
-                        AppTheme.CHATGPT_LIGHT -> Color(0xFFF7F7F8) // fallback, δεν φαίνεται ως επιλογή στις ρυθμίσεις
+                        AppTheme.LIVENOTES_DARK -> Color(0xFF131618)   // dark background
+                        AppTheme.CHATGPT_LIGHT -> Color(0xFFFFFEFE)    // soft white
                     }
                 ) {
                     LiveNotesApp(

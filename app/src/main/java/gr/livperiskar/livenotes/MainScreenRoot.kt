@@ -83,16 +83,17 @@ fun MainScreenRoot(
     }
 
     val scrim = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.Black.copy(alpha = 0.4f)
+        Color(0xFF000000).copy(alpha = 0.4f) // LNBlack
     } else {
-        Color.Black.copy(alpha = 0.1f)
+        Color(0xFF000000).copy(alpha = 0.1f)
     }
 
     val drawerBg = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.Black
+        Color(0xFF000000) // LNBlack
     } else {
-        Color.White
+        Color(0xFFFFFEFE) // LNWhiteSoft
     }
+
 
     ModalNavigationDrawer(
         drawerState = drawerState,

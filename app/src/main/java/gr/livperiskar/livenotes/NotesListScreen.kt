@@ -76,24 +76,25 @@ fun NotesListScreen(
     val selectionMode = selectedIds.isNotEmpty()
 
     val headerTextColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
 
     val deleteBgColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF401818)
+        Color(0xFFE35506).copy(alpha = 0.18f) // LNOrange, πολύ ήπιο
     } else {
-        Color(0xFFFFE0E0)
+        Color(0xFFE35506).copy(alpha = 0.12f)
     }
 
     val deleteTextColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFFAA0000)
+        Color(0xFFE35506) // LNOrange
     }
 
     val iconColor = headerTextColor
+
 
     Column(
         modifier = Modifier
@@ -106,9 +107,9 @@ fun NotesListScreen(
                 .height(56.dp)
                 .background(
                     if (appTheme == AppTheme.LIVENOTES_DARK)
-                        Color(0xFF111111).copy(alpha = 0.96f)
+                        Color(0xFF000000).copy(alpha = 0.96f)  // LNBlack
                     else
-                        Color(0xFFF0F0F5)
+                        Color(0xFFFFFEFE)                      // LNWhiteSoft
                 )
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -224,27 +225,27 @@ private fun SearchBar(
     onValueChange: (String) -> Unit
 ) {
     val bgColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF19191F)
+        Color(0xFF333233) // LNDarkSurface
     } else {
-        Color.White
+        Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
     val textColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
 
     val placeholderColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.4f)
+        Color(0xFFFFFEFE).copy(alpha = 0.4f)
     } else {
-        Color(0xFF6B6C7B)
+        Color(0xFF414140) // LNDarkSurfaceAlt
     }
 
     val cursorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF43E9A9)
+        Color(0xFF01A340) // LNGreen
     } else {
-        Color(0xFF00A37F)
+        Color(0xFF01A340)
     }
 
     // 🔹 ΚΟΙΝΟ style για input + placeholder
@@ -352,10 +353,11 @@ fun NotesSettingsView(
     onWaveformStyleChange: (WaveformStyle) -> Unit
 ) {
     val titleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
+
 
     Column(
         modifier = Modifier
@@ -387,9 +389,9 @@ fun NotesSettingsView(
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
                 color = if (appTheme == AppTheme.LIVENOTES_DARK)
-                    Color.White.copy(alpha = 0.08f)
+                    Color(0xFFFFFFFF).copy(alpha = 0.08f)
                 else
-                    Color(0xFFE0E0E5),
+                    Color(0xFF333233).copy(alpha = 0.16f),
                 thickness = 0.5.dp
             )
 
@@ -472,11 +474,11 @@ fun NotesSettingsView(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 val cursorColors = listOf(
-                    0xFF43E9A9.toInt(),
-                    0xFF00FFFF.toInt(),
-                    0xFFFF6B6B.toInt(),
-                    0xFFFFFFFF.toInt(),
-                    0xFF00FF00.toInt()
+                    0xFF01A340.toInt(), // green
+                    0xFF0169CC.toInt(), // blue
+                    0xFFE0AC00.toInt(), // yellow
+                    0xFFE04D91.toInt(), // pink
+                    0xFFFFFFFF.toInt()  // white
                 )
 
                 Row(
@@ -511,11 +513,11 @@ fun NotesSettingsView(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 val indicatorColors = listOf(
-                    0xFF00FF00.toInt(),
-                    0xFF00FFFF.toInt(),
-                    0xFFFFC857.toInt(),
-                    0xFFBB86FC.toInt(),
-                    0xFFFF6B6B.toInt()
+                    0xFFE0AC00.toInt(), // yellow
+                    0xFF01A340.toInt(), // green
+                    0xFF8046D9.toInt(), // purple
+                    0xFFE04D91.toInt(), // pink
+                    0xFFE35506.toInt()  // orange
                 )
 
                 Row(
@@ -587,22 +589,23 @@ fun SettingsSection(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val cardBg = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF15151C)
+        Color(0xFF333233) // LNDarkSurface
     } else {
-        Color(0xFFF7F7FB)
+        Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
     val borderColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.08f)
+        Color(0xFFFFFFFF).copy(alpha = 0.08f)
     } else {
-        Color(0xFFE0E0E8)
+        Color(0xFF333233).copy(alpha = 0.18f)
     }
 
     val titleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.85f)
+        Color(0xFFFFFFFF).copy(alpha = 0.85f)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
+
 
     Column(
         modifier = Modifier
@@ -637,15 +640,15 @@ fun SettingsRow(
     appTheme: AppTheme
 ) {
     val titleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
 
     val subtitleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.6f)
+        Color(0xFFFFFEFE).copy(alpha = 0.6f)
     } else {
-        Color(0xFF6B6C7B)
+        Color(0xFF414140)
     }
 
     Column(
@@ -678,16 +681,16 @@ fun ThemeChip(
     onClick: () -> Unit
 ) {
     val bgColor = when {
-        selected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF222233)
-        selected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFFE0F2EA)
-        !selected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF1A1A1A)
-        else -> Color(0xFFF0F0F5)
+        selected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF333233) // LNDarkSurface
+        selected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFF0169CC).copy(alpha = 0.12f)
+        !selected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF131618) // LNDarkBackground
+        else -> Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
     val textColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
 
     Box(
@@ -717,41 +720,42 @@ fun NoteListItem(
     onLongPress: () -> Unit
 ) {
     val bgColor = when {
-        isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF222233)
-        isSelected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFFE0F2EA)
-        !isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF111111)
-        else -> Color.White
+        isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF333233) // LNDarkSurface
+        isSelected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFF0169CC).copy(alpha = 0.08f)
+        !isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF111111) // μπορείς να το κρατήσεις ή να το πας σε 0xFF131618
+        else -> Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
     val iconBg = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF222222)
+        Color(0xFF414140) // LNDarkSurfaceAlt
     } else {
-        Color(0xFFF0F0F5)
+        Color(0xFFFFFEFE)
     }
 
     val titleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF)
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000)
     }
 
     val previewColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.7f)
+        Color(0xFFFFFEFE).copy(alpha = 0.7f)
     } else {
-        Color(0xFF4A4B53)
+        Color(0xFF414140)
     }
 
     val timestampColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.5f)
+        Color(0xFFFFFEFE).copy(alpha = 0.5f)
     } else {
-        Color(0xFF9A9BA5)
+        Color(0xFF333233)
     }
 
     val overflowColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White.copy(alpha = 0.5f)
+        Color(0xFFFFFEFE).copy(alpha = 0.5f)
     } else {
-        Color(0xFF9A9BA5)
+        Color(0xFF333233)
     }
+
 
     val createdDateText = remember(note.createdAt) {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

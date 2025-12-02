@@ -119,10 +119,11 @@ fun LiveNotesEditorScreen(
         label = "alpha_anim"
     )
 
+    // Χρώμα του dot (πατάει στην παλέτα σου)
     val baseIndicatorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(indicatorColorDark)
+        Color(indicatorColorDark)          // από τα settings, αλλά πλέον μόνο από την παλέτα
     } else {
-        Color(0xFF10A37F)
+        Color(0xFF01A340)                  // πράσινο #01a340
     }
 
     val animatedColor by animateColorAsState(
@@ -131,49 +132,51 @@ fun LiveNotesEditorScreen(
         label = "indicator_color"
     )
 
+    // Διαφάνεια (blink vs steady όταν γράφεις)
     val indicatorAlpha = if (isTyping) 1f else blinkAlpha
 
     val headerBackground = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF111111)
+        Color(0xFF000000) // LNBlack
     } else {
-        Color(0xFFEFEFF0)
+        Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
     val capsuleBackground = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF202020)
+        Color(0xFF414140) // LNDarkSurfaceAlt
     } else {
-        Color(0xFFD7D7E0)
+        Color(0xFF333233) // LNDarkSurface
     }
 
     val pageBackground = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF050505)
+        Color(0xFF131618) // LNDarkBackground
     } else {
-        Color.White
+        Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
     val editorTextColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.White
+        Color(0xFFFFFFFF) // LNWhite
     } else {
-        Color(0xFF202123)
+        Color(0xFF000000) // LNBlack
     }
 
     val placeholderColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color.Gray
+        Color(0xFFFFFEFE).copy(alpha = 0.6f) // LNWhiteSoft με διαφάνεια
     } else {
-        Color(0xFF8A8B93)
+        Color(0xFF414140) // LNDarkSurfaceAlt σαν muted text
     }
 
     val editIconColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF00FFFF)
+        Color(0xFF0169CC) // LNBlue
     } else {
-        Color(0xFF10A37F)
+        Color(0xFF0169CC)
     }
 
     val effectiveCursorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(cursorColorDark)
+        Color(cursorColorDark) // από settings, αλλά μόνο palette πλέον
     } else {
-        Color(0xFF10A37F)
+        Color(0xFF01A340) // LNGreen
     }
+
 
     val baseFontSize = 17.sp
     val baseLineHeight = 24.sp
@@ -326,7 +329,7 @@ private fun TypingWaveform(
     val infiniteTransition = rememberInfiniteTransition(label = "wave_bars")
 
     // ΠΑΝΤΑ έντονο κίτρινο LED
-    val barColor = Color(0xFFFFD600)
+    val barColor = Color(0xFFE0AC00)
 
     val bar1 by infiniteTransition.animateFloat(
         initialValue = 0.4f,
