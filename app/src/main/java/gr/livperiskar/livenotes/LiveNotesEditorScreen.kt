@@ -70,28 +70,18 @@ fun LiveNotesEditorScreen(
         mutableStateOf(currentNote?.content ?: "")
     }
 
+    // 🔹 ΠΑΝΤΑ δίνουμε focus, ΠΟΤΕ δεν ανοίγουμε keyboard αυτόματα
     LaunchedEffect(startMode) {
-        when (startMode) {
-            StartMode.KEYBOARD -> {
-                delay(150)
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            }
-            StartMode.NONE -> {
-                keyboardController?.hide()
-            }
-        }
+        delay(150)
+        focusRequester.requestFocus()
+        keyboardController?.hide()
     }
 
     LaunchedEffect(focusRequestKey) {
         if (focusRequestKey > 0) {
             delay(120)
             focusRequester.requestFocus()
-            if (startMode == StartMode.KEYBOARD) {
-                keyboardController?.show()
-            } else {
-                keyboardController?.hide()
-            }
+            keyboardController?.hide()
         }
     }
 
@@ -176,7 +166,6 @@ fun LiveNotesEditorScreen(
     } else {
         Color(0xFF01A340) // LNGreen
     }
-
 
     val baseFontSize = 17.sp
     val baseLineHeight = 24.sp
@@ -400,4 +389,3 @@ private fun TypingWaveform(
         )
     }
 }
-
