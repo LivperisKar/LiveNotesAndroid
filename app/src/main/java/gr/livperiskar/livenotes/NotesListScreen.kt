@@ -7,7 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,9 +17,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Divider
@@ -44,9 +42,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.ColumnScope
 import gr.livperiskar.livenotes.data.NoteEntity
+import gr.livperiskar.livenotes.ui.theme.LNBlue
+import gr.livperiskar.livenotes.ui.theme.LNGreen
+import gr.livperiskar.livenotes.ui.theme.LNYellow
+import gr.livperiskar.livenotes.ui.theme.LNPink
+import gr.livperiskar.livenotes.ui.theme.LNOrange
+import gr.livperiskar.livenotes.ui.theme.LNPurple
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.random.Random
 
 @Composable
 fun NotesListScreen(
@@ -95,6 +100,31 @@ fun NotesListScreen(
 
     val iconColor = headerTextColor
 
+    // Παλέτα για τα dots
+    val dotPalette = listOf(
+        LNBlue,
+        LNGreen,
+        LNYellow,
+        LNPink,
+        LNOrange,
+        LNPurple
+    )
+
+    // Για κάθε note, δίνουμε ένα dotColor, πάντα διαφορετικό από το προηγούμενο
+    val dotColors: List<Color> = remember(notes) {
+        if (notes.isEmpty()) emptyList()
+        else {
+            val result = mutableListOf<Color>()
+            var previous: Color? = null
+            for (i in notes.indices) {
+                val candidates = dotPalette.filter { it != previous }.ifEmpty { dotPalette }
+                val color = candidates[Random.nextInt(candidates.size)]
+                result += color
+                previous = color
+            }
+            result
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -188,13 +218,16 @@ fun NotesListScreen(
                     .fillMaxHeight()
                     .padding(horizontal = 8.dp)
             ) {
-                items(notes, key = { it.id }) { note ->
+                itemsIndexed(notes, key = { index, note -> note.id }) { index, note ->
                     val isSelected = selectedIds.contains(note.id)
+                    val dotColor = dotColors.getOrNull(index)
+                        ?: dotPalette[index % dotPalette.size]
 
                     NoteListItem(
                         note = note,
                         isSelected = isSelected,
                         appTheme = appTheme,
+                        dotColor = dotColor,
                         onClick = {
                             if (selectionMode) {
                                 selectedIds =
@@ -334,7 +367,6 @@ private fun SearchBar(
 
 
 
-
 @Composable
 fun NotesSettingsView(
     appTheme: AppTheme,
@@ -417,12 +449,7 @@ fun NotesSettingsView(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ThemeChip(
-                    label = "Keyboard",
-                    selected = startMode == StartMode.KEYBOARD,
-                    appTheme = appTheme,
-                    onClick = { onStartModeChange(StartMode.KEYBOARD) }
-                )
+                // Μόνο "None" – το Keyboard δεν εμφανίζεται πλέον
                 ThemeChip(
                     label = "None",
                     selected = startMode == StartMode.NONE,
@@ -716,6 +743,7 @@ fun NoteListItem(
     note: NoteEntity,
     isSelected: Boolean,
     appTheme: AppTheme,
+    dotColor: Color,
     onClick: () -> Unit,
     onLongPress: () -> Unit
 ) {
@@ -724,12 +752,6 @@ fun NoteListItem(
         isSelected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFF0169CC).copy(alpha = 0.08f)
         !isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF111111) // μπορείς να το κρατήσεις ή να το πας σε 0xFF131618
         else -> Color(0xFFFFFEFE) // LNWhiteSoft
-    }
-
-    val iconBg = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF414140) // LNDarkSurfaceAlt
-    } else {
-        Color(0xFFFFFEFE)
     }
 
     val titleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
@@ -750,13 +772,6 @@ fun NoteListItem(
         Color(0xFF333233)
     }
 
-    val overflowColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFFFFFEFE).copy(alpha = 0.5f)
-    } else {
-        Color(0xFF333233)
-    }
-
-
     val createdDateText = remember(note.createdAt) {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         formatter.format(Date(note.createdAt))
@@ -775,22 +790,6 @@ fun NoteListItem(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(iconBg),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Edit,
-                contentDescription = "Note",
-                tint = titleColor
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -818,25 +817,25 @@ fun NoteListItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = "Created: $createdDateText",
-                color = timestampColor,
-                fontSize = 11.sp,
-                fontFamily = FontFamily.SansSerif
-            )
-        }
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(dotColor)
+                )
 
-        Box(
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .size(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.MoreVert,
-                contentDescription = "More",
-                tint = overflowColor
-            )
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = "Created: $createdDateText",
+                    color = timestampColor,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.SansSerif
+                )
+            }
         }
     }
 }
