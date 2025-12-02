@@ -50,13 +50,20 @@ fun MainScreenRoot(
 
     val uiState by notesViewModel.uiState.collectAsState()
 
+    // 🔹 ΕΔΩ γίνεται το φιλτράρισμα: τίτλος + σώμα
     val notes: List<NoteEntity> = remember(uiState.notes, uiState.searchQuery) {
-        if (uiState.searchQuery.isBlank()) uiState.notes
-        else uiState.notes.filter {
-            it.title.contains(uiState.searchQuery, ignoreCase = true) ||
-                    it.content.contains(uiState.searchQuery, ignoreCase = true)
+        val query = uiState.searchQuery.trim()
+        if (query.isBlank()) {
+            uiState.notes
+        } else {
+            uiState.notes.filter { note ->
+                val (titleText, previewText) = note.resolveTitleAndPreview()
+                titleText.contains(query, ignoreCase = true) ||
+                        previewText.contains(query, ignoreCase = true)
+            }
         }
     }
+
 
     // ΠΑΝΤΑ νέα κενή σημείωση στην εκκίνηση
     var hasStartedNewNote by remember { mutableStateOf(false) }
@@ -76,7 +83,7 @@ fun MainScreenRoot(
             DrawerValue.Closed -> {
                 showSettings = false
                 editorFocusRequestKey++
-                // ✅ Οποιοδήποτε swipe που κλείνει το drawer → καθάρισε την αναζήτηση
+                // Όταν κλείνει το drawer, καθάρισε την αναζήτηση
                 notesViewModel.onSearchQueryChange("")
             }
         }
@@ -93,7 +100,6 @@ fun MainScreenRoot(
     } else {
         Color(0xFFFFFEFE) // LNWhiteSoft
     }
-
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -123,12 +129,14 @@ fun MainScreenRoot(
                     onWaveformStyleChange = onWaveformStyleChange,
                     onToggleSettings = {
                         showSettings = !showSettings
-                        // ✅ Μόλις πάει/γυρίσει από settings → καθάρισε αναζήτηση
+                        // Μόλις πάει/γυρίσει από settings → καθάρισε αναζήτηση
                         notesViewModel.onSearchQueryChange("")
                     },
-                    notes = notes,
-                    searchQuery = uiState.searchQuery,
-                    onSearchQueryChange = { notesViewModel.onSearchQueryChange(it) },
+                    notes = notes,                          // 🔹 ΠΕΡΝΑΜΕ ΤΑ ΦΙΛΤΡΑΡΙΣΜΕΝΑ notes
+                    searchQuery = uiState.searchQuery,      // 🔹 Για το highlight
+                    onSearchQueryChange = {
+                        notesViewModel.onSearchQueryChange(it)
+                    },
                     onOpenNote = { id ->
                         notesViewModel.selectNote(id)
                         scope.launch {

@@ -34,10 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.ColumnScope
@@ -51,7 +54,6 @@ import gr.livperiskar.livenotes.ui.theme.LNPurple
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.random.Random
 
 @Composable
 fun NotesListScreen(
@@ -110,20 +112,12 @@ fun NotesListScreen(
         LNPurple
     )
 
-    // Για κάθε note, δίνουμε ένα dotColor, πάντα διαφορετικό από το προηγούμενο
-    val dotColors: List<Color> = remember(notes) {
-        if (notes.isEmpty()) emptyList()
-        else {
-            val result = mutableListOf<Color>()
-            var previous: Color? = null
-            for (i in notes.indices) {
-                val candidates = dotPalette.filter { it != previous }.ifEmpty { dotPalette }
-                val color = candidates[Random.nextInt(candidates.size)]
-                result += color
-                previous = color
-            }
-            result
-        }
+    // Σταθερό χρώμα ανά σημείωση (όχι reshuffle στο search)
+    fun dotColorFor(note: NoteEntity): Color {
+        val seedSource = if (note.id != 0L) note.id else note.createdAt
+        val seed = seedSource.hashCode()
+        val index = (seed and Int.MAX_VALUE) % dotPalette.size
+        return dotPalette[index]
     }
 
     Column(
@@ -218,15 +212,15 @@ fun NotesListScreen(
                     .fillMaxHeight()
                     .padding(horizontal = 8.dp)
             ) {
-                itemsIndexed(notes, key = { index, note -> note.id }) { index, note ->
+                itemsIndexed(notes, key = { _, note -> note.id }) { _, note ->
                     val isSelected = selectedIds.contains(note.id)
-                    val dotColor = dotColors.getOrNull(index)
-                        ?: dotPalette[index % dotPalette.size]
+                    val dotColor = dotColorFor(note)
 
                     NoteListItem(
                         note = note,
                         isSelected = isSelected,
                         appTheme = appTheme,
+                        searchQuery = searchQuery,
                         dotColor = dotColor,
                         onClick = {
                             if (selectionMode) {
@@ -281,7 +275,7 @@ private fun SearchBar(
         Color(0xFF01A340)
     }
 
-    // 🔹 ΚΟΙΝΟ style για input + placeholder
+    // Κοινό style για input + placeholder
     val inputTextStyle = TextStyle(
         color = textColor,
         fontSize = 14.sp,
@@ -333,7 +327,6 @@ private fun SearchBar(
                             if (value.isEmpty()) {
                                 Text(
                                     text = "Search notes...",
-                                    // 🔹 ίδιο style, απλά άλλο χρώμα
                                     style = inputTextStyle.copy(color = placeholderColor),
                                     maxLines = 1
                                 )
@@ -365,8 +358,6 @@ private fun SearchBar(
     }
 }
 
-
-
 @Composable
 fun NotesSettingsView(
     appTheme: AppTheme,
@@ -389,7 +380,6 @@ fun NotesSettingsView(
     } else {
         Color(0xFF000000)
     }
-
 
     Column(
         modifier = Modifier
@@ -633,7 +623,6 @@ fun SettingsSection(
         Color(0xFF000000)
     }
 
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -743,6 +732,7 @@ fun NoteListItem(
     note: NoteEntity,
     isSelected: Boolean,
     appTheme: AppTheme,
+    searchQuery: String,
     dotColor: Color,
     onClick: () -> Unit,
     onLongPress: () -> Unit
@@ -750,7 +740,7 @@ fun NoteListItem(
     val bgColor = when {
         isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF333233) // LNDarkSurface
         isSelected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFF0169CC).copy(alpha = 0.08f)
-        !isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF111111) // μπορείς να το κρατήσεις ή να το πας σε 0xFF131618
+        !isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF111111)
         else -> Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
@@ -771,6 +761,20 @@ fun NoteListItem(
     } else {
         Color(0xFF333233)
     }
+
+    // Χρώμα για highlight του search term
+    val highlightBgColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
+        LNYellow.copy(alpha = 0.35f)
+    } else {
+        LNBlue.copy(alpha = 0.25f)
+    }
+
+    // 🔹 Χρησιμοποιούμε την ίδια ακριβώς λογική με το filtering
+    val displayTexts: Pair<String, String> = remember(note.title, note.content) {
+        note.resolveTitleAndPreview()
+    }
+    val titleText: String = displayTexts.first
+    val previewText: String = displayTexts.second
 
     val createdDateText = remember(note.createdAt) {
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -794,26 +798,38 @@ fun NoteListItem(
             modifier = Modifier
                 .weight(1f)
         ) {
-            Text(
-                text = if (note.title.isNotBlank()) note.title else "Untitled",
-                color = titleColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = FontFamily.SansSerif,
+            // Τίτλος με highlight
+            HighlightedText(
+                text = titleText,
+                query = searchQuery,
+                baseStyle = TextStyle(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = FontFamily.SansSerif
+                ),
+                normalColor = titleColor,
+                highlightBgColor = highlightBgColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            if (previewText.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
 
-            Text(
-                text = note.content,
-                color = previewColor,
-                fontSize = 12.sp,
-                fontFamily = FontFamily.SansSerif,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+                // Preview με highlight
+                HighlightedText(
+                    text = previewText,
+                    query = searchQuery,
+                    baseStyle = TextStyle(
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.SansSerif
+                    ),
+                    normalColor = previewColor,
+                    highlightBgColor = highlightBgColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -838,4 +854,63 @@ fun NoteListItem(
             }
         }
     }
+}
+
+@Composable
+private fun HighlightedText(
+    text: String,
+    query: String,
+    baseStyle: TextStyle,
+    normalColor: Color,
+    highlightBgColor: Color,
+    maxLines: Int,
+    overflow: TextOverflow
+) {
+    if (query.isBlank()) {
+        Text(
+            text = text,
+            color = normalColor,
+            style = baseStyle,
+            maxLines = maxLines,
+            overflow = overflow
+        )
+        return
+    }
+
+    val lowerText = text.lowercase()
+    val lowerQuery = query.lowercase()
+
+    val annotated = buildAnnotatedString {
+        var startIndex = 0
+        var index = lowerText.indexOf(lowerQuery, startIndex)
+
+        while (index >= 0) {
+            if (index > startIndex) {
+                append(text.substring(startIndex, index))
+            }
+
+            withStyle(
+                style = SpanStyle(
+                    background = highlightBgColor
+                )
+            ) {
+                append(text.substring(index, index + query.length))
+            }
+
+            startIndex = index + query.length
+            index = lowerText.indexOf(lowerQuery, startIndex)
+        }
+
+        if (startIndex < text.length) {
+            append(text.substring(startIndex))
+        }
+    }
+
+    Text(
+        text = annotated,
+        style = baseStyle,
+        color = normalColor,
+        maxLines = maxLines,
+        overflow = overflow
+    )
 }
