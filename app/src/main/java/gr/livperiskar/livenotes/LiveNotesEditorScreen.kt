@@ -232,13 +232,9 @@ fun LiveNotesEditorScreen(
                 )
             }
 
-            // Blinking dot capsule
+// Blinking dot χωρίς capsule background
             Box(
                 modifier = Modifier
-                    .background(
-                        color = capsuleBackground.copy(alpha = 0.95f),
-                        shape = RoundedCornerShape(999.dp)
-                    )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -249,6 +245,7 @@ fun LiveNotesEditorScreen(
                         .background(animatedColor, CircleShape)
                 )
             }
+
         }
 
         Spacer(modifier = Modifier.height(8.dp))
