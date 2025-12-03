@@ -251,97 +251,101 @@ private fun SearchBar(
     value: String,
     onValueChange: (String) -> Unit
 ) {
-    val bgColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF333233) // LNDarkSurface
+    val isDark = appTheme == AppTheme.LIVENOTES_DARK
+
+    // Τα χρώματά σου για dark theme
+    val containerColor = if (isDark) {
+        Color(0xFF212020)   // background
     } else {
-        Color(0xFFFFFEFE) // LNWhiteSoft
+        Color(0xFFF2F2F2)
     }
 
-    val textColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
+    val borderColor = if (isDark) {
+        Color(0xFF424242)   // border
+    } else {
+        Color(0xFFE0E0E0)
+    }
+
+    val textColor = if (isDark) {
         Color(0xFFFFFFFF)
     } else {
         Color(0xFF000000)
     }
 
-    val placeholderColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFFFFFEFE).copy(alpha = 0.4f)
+    val placeholderColor = if (isDark) {
+        Color(0xFFB0B0B1)   // placeholder
     } else {
-        Color(0xFF414140) // LNDarkSurfaceAlt
+        Color(0xFF757575)
     }
 
-    val cursorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF01A340) // LNGreen
-    } else {
-        Color(0xFF01A340)
-    }
+    val cursorColor = Color(0xFF00C26F)
 
-    // Κοινό style για input + placeholder
     val inputTextStyle = TextStyle(
         color = textColor,
-        fontSize = 14.sp,
-        lineHeight = 18.sp,
+        fontSize = 16.sp,
+        lineHeight = 20.sp,
         fontFamily = FontFamily.SansSerif
     )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
+                .height(52.dp)
                 .clip(RoundedCornerShape(999.dp))
-                .background(bgColor)
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .background(containerColor)
+                .border(
+                    width = 1.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(999.dp)
+                )
+                .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Filled.Search,
                     contentDescription = "Search",
                     tint = placeholderColor,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
 
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-                Box(
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = inputTextStyle,
+                    cursorBrush = SolidColor(cursorColor),
                     modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    BasicTextField(
-                        value = value,
-                        onValueChange = onValueChange,
-                        singleLine = true,
-                        textStyle = inputTextStyle,
-                        cursorBrush = SolidColor(cursorColor),
-                        modifier = Modifier.fillMaxWidth(),
-                        decorationBox = { innerTextField ->
-                            if (value.isEmpty()) {
-                                Text(
-                                    text = "Search notes...",
-                                    style = inputTextStyle.copy(color = placeholderColor),
-                                    maxLines = 1
-                                )
-                            }
-                            innerTextField()
+                    decorationBox = { innerTextField ->
+                        if (value.isEmpty()) {
+                            Text(
+                                text = "Search notes...",
+                                style = inputTextStyle.copy(color = placeholderColor),
+                                maxLines = 1
+                            )
                         }
-                    )
-                }
+                        innerTextField()
+                    }
+                )
 
                 if (value.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Box(
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(24.dp)
+                            .clip(CircleShape)
                             .clickable { onValueChange("") },
                         contentAlignment = Alignment.Center
                     ) {
@@ -349,7 +353,7 @@ private fun SearchBar(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Clear search",
                             tint = placeholderColor,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
