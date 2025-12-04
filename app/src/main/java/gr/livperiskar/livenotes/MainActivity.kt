@@ -1,8 +1,11 @@
 package gr.livperiskar.livenotes
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -17,6 +20,13 @@ import gr.livperiskar.livenotes.ui.theme.LivenotesTheme
 class MainActivity : ComponentActivity() {
 
     private val notesViewModel: NotesViewModel by viewModels()
+
+    // Runtime permission για notifications (Android 13+)
+    private val requestNotificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            // Εδώ μπορείς αν θέλεις να βάλεις Log / Toast
+            // Προς το παρόν δεν χρειάζεται κάτι άλλο
+        }
 
     companion object {
         private const val PREFS_NAME = "livenotes_prefs"
@@ -36,9 +46,13 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_INDICATOR_SCALE_DARK = 1.0f
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Android 13+ → ζητάμε ρητά άδεια για notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         val initialTheme = loadThemeFromPrefs()
         val initialCursorColorDark = loadCursorColorDarkFromPrefs()
