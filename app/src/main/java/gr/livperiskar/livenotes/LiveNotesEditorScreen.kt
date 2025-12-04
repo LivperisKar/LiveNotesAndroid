@@ -4,16 +4,17 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -28,23 +29,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import gr.livperiskar.livenotes.data.NoteEntity
 import kotlinx.coroutines.delay
-import kotlin.math.PI
-import kotlin.math.sin
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
 
 @Composable
 fun LiveNotesEditorScreen(
@@ -66,9 +70,11 @@ fun LiveNotesEditorScreen(
     var isFocused by remember { mutableStateOf(false) }
     var isTyping by remember { mutableStateOf(false) }
 
-    var localText by remember(currentNote?.id) {
-        mutableStateOf(currentNote?.content ?: "")
+    // Χρησιμοποιούμε TextFieldValue για να ξέρουμε τη θέση του cursor
+    var textFieldValue by remember(currentNote?.id) {
+        mutableStateOf(TextFieldValue(currentNote?.content ?: ""))
     }
+    val localText = textFieldValue.text
 
     // 🔹 ΠΑΝΤΑ δίνουμε focus, ΠΟΤΕ δεν ανοίγουμε keyboard αυτόματα
     LaunchedEffect(startMode) {
@@ -109,11 +115,11 @@ fun LiveNotesEditorScreen(
         label = "alpha_anim"
     )
 
-    // Χρώμα του dot (πατάει στην παλέτα σου)
+    // Χρώμα του dot
     val baseIndicatorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(indicatorColorDark)          // από τα settings, αλλά πλέον μόνο από την παλέτα
+        Color(indicatorColorDark)
     } else {
-        Color(0xFF01A340)                  // πράσινο #01a340
+        Color(0xFF01A340) // πράσινο
     }
 
     val animatedColor by animateColorAsState(
@@ -131,12 +137,6 @@ fun LiveNotesEditorScreen(
         Color(0xFFFFFEFE) // LNWhiteSoft
     }
 
-    val capsuleBackground = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF414140) // LNDarkSurfaceAlt
-    } else {
-        Color(0xFF333233) // LNDarkSurface
-    }
-
     val pageBackground = if (appTheme == AppTheme.LIVENOTES_DARK) {
         Color(0xFF131618) // LNDarkBackground
     } else {
@@ -150,19 +150,21 @@ fun LiveNotesEditorScreen(
     }
 
     val placeholderColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFFFFFEFE).copy(alpha = 0.6f) // LNWhiteSoft με διαφάνεια
+        Color(0xFFFFFEFE).copy(alpha = 0.6f)
     } else {
-        Color(0xFF414140) // LNDarkSurfaceAlt σαν muted text
+        Color(0xFF414140)
     }
 
-    val editIconColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF0169CC) // LNBlue
+    val editIconColor = Color(0xFF0169CC) // LNBlue (ίδιο σε light/dark)
+
+    val reminderIconColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
+        Color(0xFFE0AC00) // alert yellow
     } else {
-        Color(0xFF0169CC)
+        Color(0xFFE35506) // orange
     }
 
     val effectiveCursorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(cursorColorDark) // από settings, αλλά μόνο palette πλέον
+        Color(cursorColorDark)
     } else {
         Color(0xFF01A340) // LNGreen
     }
@@ -189,10 +191,26 @@ fun LiveNotesEditorScreen(
         baseDotSize
     }
 
+    // Μικρό animation στο καμπανάκι (pulse)
+    var bellPressed by remember { mutableStateOf(false) }
+    val bellScale by animateFloatAsState(
+        targetValue = if (bellPressed) 1.1f else 1f,
+        animationSpec = tween(durationMillis = 120, easing = LinearEasing),
+        label = "bell_scale"
+    )
+
+    LaunchedEffect(bellPressed) {
+        if (bellPressed) {
+            delay(120)
+            bellPressed = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
+
         // HEADER
         Row(
             modifier = Modifier
@@ -206,7 +224,7 @@ fun LiveNotesEditorScreen(
             IconButton(
                 onClick = {
                     onNewNote()
-                    localText = ""
+                    textFieldValue = TextFieldValue("")
                 },
                 modifier = Modifier.size(24.dp)
             ) {
@@ -219,20 +237,58 @@ fun LiveNotesEditorScreen(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Waveform στο κέντρο
+            // Καμπανάκι στο κέντρο
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
-                TypingWaveform(
-                    isTyping = isTyping,
-                    waveformStyle = waveformStyle
-                )
+                IconButton(
+                    onClick = {
+                        bellPressed = true
+
+                        // Δημιουργία inline reminder στη ΘΕΣΗ του cursor
+                        val now = Date()
+                        val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        val formattedNow = formatter.format(now)
+
+                        val template = "@rmd $formattedNow | reminder text |"
+
+                        val oldText = textFieldValue.text
+                        val selStart = textFieldValue.selection.start
+                        val selEnd = textFieldValue.selection.end
+                        val start = min(selStart, selEnd).coerceAtLeast(0)
+                        val end = max(selStart, selEnd).coerceAtMost(oldText.length)
+
+                        val newText = buildString {
+                            append(oldText.substring(0, start))
+                            append(template)
+                            append(oldText.substring(end))
+                        }
+
+                        val newCursor = start + template.length
+
+                        textFieldValue = TextFieldValue(
+                            text = newText,
+                            selection = TextRange(newCursor)
+                        )
+
+                        // ενημέρωση ViewModel
+                        onNoteContentChange(newText)
+                    },
+                    modifier = Modifier.scale(bellScale)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = "Add reminder",
+                        tint = reminderIconColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
 
-// Blinking dot χωρίς capsule background
+            // Blinking dot
             Box(
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -245,7 +301,6 @@ fun LiveNotesEditorScreen(
                         .background(animatedColor, CircleShape)
                 )
             }
-
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -266,10 +321,10 @@ fun LiveNotesEditorScreen(
                 )
         ) {
             TextField(
-                value = localText,
-                onValueChange = { newText ->
-                    localText = newText
-                    onNoteContentChange(newText)
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    textFieldValue = newValue
+                    onNoteContentChange(newValue.text)
                 },
                 modifier = Modifier
                     .fillMaxSize()
@@ -304,85 +359,5 @@ fun LiveNotesEditorScreen(
                 }
             )
         }
-    }
-}
-
-@Composable
-private fun TypingWaveform(
-    isTyping: Boolean,
-    waveformStyle: WaveformStyle
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "wave_bars")
-
-    // ΠΑΝΤΑ έντονο κίτρινο LED
-    val barColor = Color(0xFFE0AC00)
-
-    val bar1 by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 500, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bar1"
-    )
-    val bar2 by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 650, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bar2"
-    )
-    val bar3 by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 550, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bar3"
-    )
-
-    val baseHeight = 4.dp
-    val maxExtra = 10.dp
-    val idleFactor = 0.2f
-
-    val amp1 = if (isTyping) bar1 else idleFactor
-    val amp2 = if (isTyping) bar2 else idleFactor * 0.8f
-    val amp3 = if (isTyping) bar3 else idleFactor * 0.6f
-
-    fun barHeight(a: Float) = baseHeight + maxExtra * a
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.height(24.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .width(3.dp)
-                .height(barHeight(amp1))
-                .background(barColor.copy(alpha = 0.95f), RoundedCornerShape(999.dp))
-        )
-
-        Spacer(modifier = Modifier.width(3.dp))
-
-        Box(
-            modifier = Modifier
-                .width(3.dp)
-                .height(barHeight(amp2))
-                .background(barColor.copy(alpha = 0.95f), RoundedCornerShape(999.dp))
-        )
-
-        Spacer(modifier = Modifier.width(3.dp))
-
-        Box(
-            modifier = Modifier
-                .width(3.dp)
-                .height(barHeight(amp3))
-                .background(barColor.copy(alpha = 0.95f), RoundedCornerShape(999.dp))
-        )
     }
 }
