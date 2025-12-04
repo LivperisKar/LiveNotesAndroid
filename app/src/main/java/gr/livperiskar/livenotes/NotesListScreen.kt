@@ -402,88 +402,12 @@ fun NotesSettingsView(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // SECTION 1 – General
-        SettingsSection(appTheme = appTheme, sectionTitle = "General") {
-            SettingsRow(
-                title = "Auto-save",
-                subtitle = "Save notes while typing",
-                appTheme = appTheme
-            )
-
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                color = if (appTheme == AppTheme.LIVENOTES_DARK)
-                    Color(0xFFFFFFFF).copy(alpha = 0.08f)
-                else
-                    Color(0xFF333233).copy(alpha = 0.16f),
-                thickness = 0.5.dp
-            )
-
-            SettingsRow(
-                title = "Sort notes",
-                subtitle = "Newest first",
-                appTheme = appTheme
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // SECTION 2 – Startup behavior
-        SettingsSection(appTheme = appTheme, sectionTitle = "Startup behavior") {
-            SettingsRow(
-                title = "Editor on app open",
-                subtitle = "How the editor starts when the app opens",
-                appTheme = appTheme
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Μόνο "None" – το Keyboard δεν εμφανίζεται πλέον
-                ThemeChip(
-                    label = "None",
-                    selected = startMode == StartMode.NONE,
-                    appTheme = appTheme,
-                    onClick = { onStartModeChange(StartMode.NONE) }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // SECTION 3 – Typing waveform
-        SettingsSection(appTheme = appTheme, sectionTitle = "Typing waveform") {
-            Text(
-                text = "Waveform style",
-                color = titleColor,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.SansSerif
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ThemeChip(
-                    label = "Bars",
-                    selected = true,
-                    appTheme = appTheme,
-                    onClick = { onWaveformStyleChange(WaveformStyle.BARS) }
-                )
-            }
-        }
-
+        // ΜΟΝΟ αυτό το section είναι ορατό πλέον
         if (appTheme == AppTheme.LIVENOTES_DARK) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // SECTION 4 – Cursor & indicator (dark)
-            SettingsSection(appTheme = appTheme, sectionTitle = "Cursor & indicator (dark theme)") {
+            SettingsSection(
+                appTheme = appTheme,
+                sectionTitle = "Cursor & indicator (dark theme)"
+            ) {
 
                 Text(
                     text = "Cursor color",
@@ -602,6 +526,7 @@ fun NotesSettingsView(
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
+
 
 @Composable
 fun SettingsSection(
