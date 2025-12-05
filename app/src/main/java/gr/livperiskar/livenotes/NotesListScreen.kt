@@ -11,16 +11,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
@@ -34,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -43,17 +42,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.ColumnScope
 import gr.livperiskar.livenotes.data.NoteEntity
 import gr.livperiskar.livenotes.ui.theme.LNBlue
 import gr.livperiskar.livenotes.ui.theme.LNGreen
-import gr.livperiskar.livenotes.ui.theme.LNYellow
-import gr.livperiskar.livenotes.ui.theme.LNPink
 import gr.livperiskar.livenotes.ui.theme.LNOrange
+import gr.livperiskar.livenotes.ui.theme.LNPink
 import gr.livperiskar.livenotes.ui.theme.LNPurple
+import gr.livperiskar.livenotes.ui.theme.LNYellow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.layout.ColumnScope
 
 @Composable
 fun NotesListScreen(
@@ -89,7 +88,7 @@ fun NotesListScreen(
     }
 
     val deleteBgColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFFE35506).copy(alpha = 0.18f) // LNOrange, πολύ ήπιο
+        Color(0xFFE35506).copy(alpha = 0.18f)
     } else {
         Color(0xFFE35506).copy(alpha = 0.12f)
     }
@@ -97,12 +96,11 @@ fun NotesListScreen(
     val deleteTextColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
         Color(0xFFFFFFFF)
     } else {
-        Color(0xFFE35506) // LNOrange
+        Color(0xFFE35506)
     }
 
     val iconColor = headerTextColor
 
-    // Παλέτα για τα dots
     val dotPalette = listOf(
         LNBlue,
         LNGreen,
@@ -112,7 +110,6 @@ fun NotesListScreen(
         LNPurple
     )
 
-    // Σταθερό χρώμα ανά σημείωση (όχι reshuffle στο search)
     fun dotColorFor(note: NoteEntity): Color {
         val seedSource = if (note.id != 0L) note.id else note.createdAt
         val seed = seedSource.hashCode()
@@ -124,16 +121,15 @@ fun NotesListScreen(
         modifier = Modifier
             .fillMaxHeight()
     ) {
-        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
                 .background(
                     if (appTheme == AppTheme.LIVENOTES_DARK)
-                        Color(0xFF000000).copy(alpha = 0.96f)  // LNBlack
+                        Color(0xFF000000).copy(alpha = 0.96f)
                     else
-                        Color(0xFFFFFEFE)                      // LNWhiteSoft
+                        Color(0xFFFFFEFE)
                 )
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -200,7 +196,6 @@ fun NotesListScreen(
                 onWaveformStyleChange = onWaveformStyleChange
             )
         } else {
-            // Search bar
             SearchBar(
                 appTheme = appTheme,
                 value = searchQuery,
@@ -253,15 +248,14 @@ private fun SearchBar(
 ) {
     val isDark = appTheme == AppTheme.LIVENOTES_DARK
 
-    // Τα χρώματά σου για dark theme
     val containerColor = if (isDark) {
-        Color(0xFF212020)   // background
+        Color(0xFF212020)
     } else {
         Color(0xFFF2F2F2)
     }
 
     val borderColor = if (isDark) {
-        Color(0xFF424242)   // border
+        Color(0xFF424242)
     } else {
         Color(0xFFE0E0E0)
     }
@@ -273,7 +267,7 @@ private fun SearchBar(
     }
 
     val placeholderColor = if (isDark) {
-        Color(0xFFB0B0B1)   // placeholder
+        Color(0xFFB0B0B1)
     } else {
         Color(0xFF757575)
     }
@@ -385,6 +379,18 @@ fun NotesSettingsView(
         Color(0xFF000000)
     }
 
+    // Ενιαία παλέτα για cursor & blinking dot – προστέθηκε και κόκκινο
+    val accentColors = listOf(
+        0xFF01A340.toInt(), // green
+        0xFF0169CC.toInt(), // blue
+        0xFFE0AC00.toInt(), // yellow
+        0xFFE04D91.toInt(), // pink
+        0xFFFFFFFF.toInt(), // white
+        0xFF8046D9.toInt(), // purple
+        0xFFE35506.toInt(), // orange
+        0xFFFF4444.toInt()  // red
+    )
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -402,131 +408,157 @@ fun NotesSettingsView(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ΜΟΝΟ αυτό το section είναι ορατό πλέον
-        if (appTheme == AppTheme.LIVENOTES_DARK) {
-            SettingsSection(
-                appTheme = appTheme,
-                sectionTitle = "Cursor & indicator (dark theme)"
+        // Theme toggle
+        SettingsSection(
+            appTheme = appTheme,
+            sectionTitle = "Theme"
+        ) {
+            Text(
+                text = "Appearance",
+                color = titleColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-
-                Text(
-                    text = "Cursor color",
-                    color = titleColor,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.SansSerif
+                ThemeChip(
+                    label = "LiveNotes dark",
+                    selected = appTheme == AppTheme.LIVENOTES_DARK,
+                    appTheme = appTheme,
+                    onClick = { onThemeChange(AppTheme.LIVENOTES_DARK) }
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                val cursorColors = listOf(
-                    0xFF01A340.toInt(), // green
-                    0xFF0169CC.toInt(), // blue
-                    0xFFE0AC00.toInt(), // yellow
-                    0xFFE04D91.toInt(), // pink
-                    0xFFFFFFFF.toInt()  // white
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    cursorColors.forEach { colorInt ->
-                        val isSelected = cursorColorDark == colorInt
-                        Box(
-                            modifier = Modifier
-                                .size(if (isSelected) 24.dp else 20.dp)
-                                .clip(CircleShape)
-                                .background(Color(colorInt))
-                                .border(
-                                    width = 2.dp,
-                                    color = if (isSelected) Color.White else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                                .clickable { onCursorColorDarkChange(colorInt) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Blinking dot color",
-                    color = titleColor,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.SansSerif
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                val indicatorColors = listOf(
-                    0xFFE0AC00.toInt(), // yellow
-                    0xFF01A340.toInt(), // green
-                    0xFF8046D9.toInt(), // purple
-                    0xFFE04D91.toInt(), // pink
-                    0xFFE35506.toInt()  // orange
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    indicatorColors.forEach { colorInt ->
-                        val isSelected = indicatorColorDark == colorInt
-                        Box(
-                            modifier = Modifier
-                                .size(if (isSelected) 24.dp else 20.dp)
-                                .clip(CircleShape)
-                                .background(Color(colorInt))
-                                .border(
-                                    width = 2.dp,
-                                    color = if (isSelected) Color.White else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                                .clickable { onIndicatorColorDarkChange(colorInt) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Blinking dot size",
-                    color = titleColor,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.SansSerif
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Slider(
-                    value = indicatorScaleDark,
-                    onValueChange = { onIndicatorScaleDarkChange(it) },
-                    valueRange = 0.8f..1.6f,
-                    steps = 3
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Cursor thickness & text size",
-                    color = titleColor,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.SansSerif
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Slider(
-                    value = cursorScaleDark,
-                    onValueChange = { onCursorScaleDarkChange(it) },
-                    valueRange = 0.8f..1.4f,
-                    steps = 3
+                ThemeChip(
+                    label = "ChatGPT light",
+                    selected = appTheme == AppTheme.CHATGPT_LIGHT,
+                    appTheme = appTheme,
+                    onClick = { onThemeChange(AppTheme.CHATGPT_LIGHT) }
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Cursor & indicator – πάντα ορατό
+        SettingsSection(
+            appTheme = appTheme,
+            sectionTitle = "Cursor & indicator"
+        ) {
+
+            if (appTheme == AppTheme.CHATGPT_LIGHT) {
+                Text(
+                    text = "These settings are used in the LiveNotes dark editor.",
+                    color = titleColor.copy(alpha = 0.7f),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.SansSerif
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Text(
+                text = "Cursor color",
+                color = titleColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                accentColors.forEach { colorInt ->
+                    val isSelected = cursorColorDark == colorInt
+                    Box(
+                        modifier = Modifier
+                            .size(if (isSelected) 24.dp else 20.dp)
+                            .clip(CircleShape)
+                            .background(Color(colorInt))
+                            .border(
+                                width = 2.dp,
+                                color = if (isSelected) Color.White else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .clickable { onCursorColorDarkChange(colorInt) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Blinking dot color",
+                color = titleColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                accentColors.forEach { colorInt ->
+                    val isSelected = indicatorColorDark == colorInt
+                    Box(
+                        modifier = Modifier
+                            .size(if (isSelected) 24.dp else 20.dp)
+                            .clip(CircleShape)
+                            .background(Color(colorInt))
+                            .border(
+                                width = 2.dp,
+                                color = if (isSelected) Color.White else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .clickable { onIndicatorColorDarkChange(colorInt) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Blinking dot size",
+                color = titleColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Slider(
+                value = indicatorScaleDark,
+                onValueChange = { onIndicatorScaleDarkChange(it) },
+                valueRange = 0.8f..1.6f,
+                steps = 3
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Cursor thickness & text size",
+                color = titleColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Slider(
+                value = cursorScaleDark,
+                onValueChange = { onCursorScaleDarkChange(it) },
+                valueRange = 0.8f..1.4f,
+                steps = 3
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
-
 
 @Composable
 fun SettingsSection(
@@ -535,9 +567,9 @@ fun SettingsSection(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val cardBg = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF333233) // LNDarkSurface
+        Color(0xFF333233)
     } else {
-        Color(0xFFFFFEFE) // LNWhiteSoft
+        Color(0xFFFFFEFE)
     }
 
     val borderColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
@@ -626,10 +658,14 @@ fun ThemeChip(
     onClick: () -> Unit
 ) {
     val bgColor = when {
-        selected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF333233) // LNDarkSurface
-        selected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFF0169CC).copy(alpha = 0.12f)
-        !selected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF131618) // LNDarkBackground
-        else -> Color(0xFFFFFEFE) // LNWhiteSoft
+        selected && appTheme == AppTheme.LIVENOTES_DARK ->
+            Color(0xFF0169CC).copy(alpha = 0.18f)
+        selected && appTheme == AppTheme.CHATGPT_LIGHT ->
+            Color(0xFF0169CC).copy(alpha = 0.08f)
+        !selected && appTheme == AppTheme.LIVENOTES_DARK ->
+            Color(0xFF131618)
+        else ->
+            Color(0xFFFFFEFE)
     }
 
     val textColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
@@ -638,10 +674,23 @@ fun ThemeChip(
         Color(0xFF000000)
     }
 
+    val borderColor = when {
+        selected && appTheme == AppTheme.LIVENOTES_DARK ->
+            Color(0xFFFFFFFF).copy(alpha = 0.35f)
+        selected && appTheme == AppTheme.CHATGPT_LIGHT ->
+            Color(0xFF0169CC).copy(alpha = 0.35f)
+        else -> Color.Transparent
+    }
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
             .background(bgColor)
+            .border(
+                width = 0.6.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(999.dp)
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
@@ -667,10 +716,10 @@ fun NoteListItem(
     onLongPress: () -> Unit
 ) {
     val bgColor = when {
-        isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF333233) // LNDarkSurface
+        isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF333233)
         isSelected && appTheme == AppTheme.CHATGPT_LIGHT -> Color(0xFF0169CC).copy(alpha = 0.08f)
         !isSelected && appTheme == AppTheme.LIVENOTES_DARK -> Color(0xFF111111)
-        else -> Color(0xFFFFFEFE) // LNWhiteSoft
+        else -> Color(0xFFFFFEFE)
     }
 
     val titleColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
@@ -691,14 +740,12 @@ fun NoteListItem(
         Color(0xFF333233)
     }
 
-    // Χρώμα για highlight του search term
     val highlightBgColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
         LNYellow.copy(alpha = 0.35f)
     } else {
         LNBlue.copy(alpha = 0.25f)
     }
 
-    // 🔹 Χρησιμοποιούμε την ίδια ακριβώς λογική με το filtering
     val displayTexts: Pair<String, String> = remember(note.title, note.content) {
         note.resolveTitleAndPreview()
     }
@@ -727,7 +774,6 @@ fun NoteListItem(
             modifier = Modifier
                 .weight(1f)
         ) {
-            // Τίτλος με highlight
             HighlightedText(
                 text = titleText,
                 query = searchQuery,
@@ -745,7 +791,6 @@ fun NoteListItem(
             if (previewText.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Preview με highlight
                 HighlightedText(
                     text = previewText,
                     query = searchQuery,
