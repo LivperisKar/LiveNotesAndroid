@@ -26,7 +26,8 @@ data class InlineReminder(
 data class NotesUiState(
     val notes: List<NoteEntity> = emptyList(),
     val currentNote: NoteEntity? = null,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val reminderLineToFocus: Int? = null   // <<< ΝΕΟ πεδίο για focus σε γραμμή reminder
 )
 
 class NotesViewModel(application: Application) : AndroidViewModel(application) {
@@ -46,6 +47,7 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
     // noteId που θέλουμε να ανοίξει όταν είναι διαθέσιμα τα notes (π.χ. από notification tap)
     private var pendingSelectNoteId: Long? = null
+    private var pendingReminderLineIndex: Int? = null   // <<< ΝΕΟ: γραμμή στην οποία θέλουμε focus
 
     init {
         val db = LiveNotesDatabase.getInstance(application)
@@ -229,6 +231,14 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
         trySelectPendingNote()
     }
 
+    /** Καλείται όταν έρχεται notification με συγκεκριμένο noteId + γραμμή reminder. */
+    fun scheduleOpenNoteAtReminder(noteId: Long, lineIndex: Int) {
+        if (noteId <= 0L || lineIndex < 0) return
+        pendingSelectNoteId = noteId
+        pendingReminderLineIndex = lineIndex
+        trySelectPendingNote()
+    }
+
     private fun trySelectPendingNote() {
         val targetId = pendingSelectNoteId ?: return
         val notes = _uiState.value.notes
@@ -240,7 +250,28 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
         // Χρησιμοποιούμε τη λογική του selectNote για να κρατήσουμε ένα σημείο αλήθειας
         selectNote(targetId)
+
+        // Αν έχουμε pending line index, γράφουμε στο state ότι πρέπει να γίνει focus εκεί
+        val lineIndex = pendingReminderLineIndex
+        if (lineIndex != null && lineIndex >= 0) {
+            _uiState.update { state ->
+                state.copy(reminderLineToFocus = lineIndex)
+            }
+        }
+
         pendingSelectNoteId = null
+        pendingReminderLineIndex = null
+    }
+
+    /** Καλείται από το UI όταν ο editor έχει ήδη κάνει focus στη γραμμή. */
+    fun clearReminderLineFocus() {
+        _uiState.update { state ->
+            if (state.reminderLineToFocus != null) {
+                state.copy(reminderLineToFocus = null)
+            } else {
+                state
+            }
+        }
     }
 
     // ======================

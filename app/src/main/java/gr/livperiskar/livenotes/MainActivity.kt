@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
     // Runtime permission για notifications (Android 13+)
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            // Προαιρετικά: Log / Toast αν θέλεις να ξέρεις αν δόθηκε η άδεια
+            // Προαιρετικά: log/toast αν σε νοιάζει το αποτέλεσμα της άδειας
         }
 
     companion object {
@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_CURSOR_SCALE_DARK = 1.0f
         private val DEFAULT_INDICATOR_COLOR_DARK = 0xFFE0AC00.toInt() // yellow
         private const val DEFAULT_INDICATOR_SCALE_DARK = 1.0f
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,10 +54,20 @@ class MainActivity : ComponentActivity() {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // Αν ήρθαμε από notification, πάρε το noteId
+        // Αν ήρθαμε από notification, πάρε noteId + lineIndex
         val startNoteId = intent?.getLongExtra(ReminderWorker.EXTRA_NOTE_ID, -1L) ?: -1L
+        val startReminderLineIndex =
+            intent?.getIntExtra(ReminderWorker.EXTRA_REMINDER_LINE_INDEX, -1) ?: -1
+
         if (startNoteId > 0L) {
-            notesViewModel.scheduleSelectNote(startNoteId)
+            if (startReminderLineIndex >= 0) {
+                notesViewModel.scheduleOpenNoteAtReminder(
+                    noteId = startNoteId,
+                    lineIndex = startReminderLineIndex
+                )
+            } else {
+                notesViewModel.scheduleSelectNote(startNoteId)
+            }
         }
 
         val initialTheme = loadThemeFromPrefs()
@@ -134,11 +143,19 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
 
         val noteId = intent.getLongExtra(ReminderWorker.EXTRA_NOTE_ID, -1L)
+        val lineIndex = intent.getIntExtra(ReminderWorker.EXTRA_REMINDER_LINE_INDEX, -1)
+
         if (noteId > 0L) {
-            notesViewModel.scheduleSelectNote(noteId)
+            if (lineIndex >= 0) {
+                notesViewModel.scheduleOpenNoteAtReminder(
+                    noteId = noteId,
+                    lineIndex = lineIndex
+                )
+            } else {
+                notesViewModel.scheduleSelectNote(noteId)
+            }
         }
     }
-
 
     // ---------- THEME PREFS ----------
 

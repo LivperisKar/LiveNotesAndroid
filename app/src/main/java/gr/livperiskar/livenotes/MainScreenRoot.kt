@@ -50,7 +50,7 @@ fun MainScreenRoot(
 
     val uiState by notesViewModel.uiState.collectAsState()
 
-    // 🔹 ΕΔΩ γίνεται το φιλτράρισμα: τίτλος + σώμα
+    // 🔹 Φιλτράρισμα τίτλου + preview
     val notes: List<NoteEntity> = remember(uiState.notes, uiState.searchQuery) {
         val query = uiState.searchQuery.trim()
         if (query.isBlank()) {
@@ -64,16 +64,6 @@ fun MainScreenRoot(
         }
     }
 
-
-    // ΠΑΝΤΑ νέα κενή σημείωση στην εκκίνηση
-    var hasStartedNewNote by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!hasStartedNewNote) {
-            notesViewModel.startNewNote()
-            hasStartedNewNote = true
-        }
-    }
-
     // Όταν ανοίγει / κλείνει το drawer
     LaunchedEffect(drawerState.currentValue) {
         when (drawerState.currentValue) {
@@ -83,22 +73,22 @@ fun MainScreenRoot(
             DrawerValue.Closed -> {
                 showSettings = false
                 editorFocusRequestKey++
-                // Όταν κλείνει το drawer, καθάρισε την αναζήτηση
+                // Καθάρισε πάντα την αναζήτηση όταν κλείνει το drawer
                 notesViewModel.onSearchQueryChange("")
             }
         }
     }
 
     val scrim = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF000000).copy(alpha = 0.4f) // LNBlack
+        Color(0xFF000000).copy(alpha = 0.4f)
     } else {
         Color(0xFF000000).copy(alpha = 0.1f)
     }
 
     val drawerBg = if (appTheme == AppTheme.LIVENOTES_DARK) {
-        Color(0xFF000000) // LNBlack
+        Color(0xFF000000)
     } else {
-        Color(0xFFFFFEFE) // LNWhiteSoft
+        Color(0xFFFFFEFE)
     }
 
     ModalNavigationDrawer(
@@ -129,19 +119,16 @@ fun MainScreenRoot(
                     onWaveformStyleChange = onWaveformStyleChange,
                     onToggleSettings = {
                         showSettings = !showSettings
-                        // Μόλις πάει/γυρίσει από settings → καθάρισε αναζήτηση
                         notesViewModel.onSearchQueryChange("")
                     },
-                    notes = notes,                          // 🔹 ΠΕΡΝΑΜΕ ΤΑ ΦΙΛΤΡΑΡΙΣΜΕΝΑ notes
-                    searchQuery = uiState.searchQuery,      // 🔹 Για το highlight
+                    notes = notes,
+                    searchQuery = uiState.searchQuery,
                     onSearchQueryChange = {
                         notesViewModel.onSearchQueryChange(it)
                     },
                     onOpenNote = { id ->
                         notesViewModel.selectNote(id)
-                        scope.launch {
-                            drawerState.close()
-                        }
+                        scope.launch { drawerState.close() }
                     },
                     onDeleteSelected = { ids ->
                         notesViewModel.deleteNotes(ids)
@@ -161,7 +148,10 @@ fun MainScreenRoot(
             currentNote = uiState.currentNote,
             waveformStyle = waveformStyle,
             onNoteContentChange = { notesViewModel.updateCurrentContent(it) },
-            onNewNote = { notesViewModel.startNewNote() }
+            onNewNote = { notesViewModel.startNewNote() },
+            // 🔹 Νέα πεδία για focus στη γραμμή reminder
+            reminderLineToFocus = uiState.reminderLineToFocus,
+            onReminderFocusHandled = { notesViewModel.clearReminderLineFocus() }
         )
     }
 }

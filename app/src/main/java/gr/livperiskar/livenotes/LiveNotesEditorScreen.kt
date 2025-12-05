@@ -66,7 +66,10 @@ fun LiveNotesEditorScreen(
     currentNote: NoteEntity?,
     waveformStyle: WaveformStyle,
     onNoteContentChange: (String) -> Unit,
-    onNewNote: () -> Unit
+    onNewNote: () -> Unit,
+    // ΝΕΑ ΠΑΡΑΜΕΤΡΟΙ για focus στη γραμμή reminder
+    reminderLineToFocus: Int?,
+    onReminderFocusHandled: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -80,7 +83,7 @@ fun LiveNotesEditorScreen(
     }
     val localText = textFieldValue.text
 
-    // 🔹 ΠΑΝΤΑ δίνουμε focus, ΠΟΤΕ δεν ανοίγουμε keyboard αυτόματα
+    // 🔹 FOCUS στον editor, χωρίς αυτόματο άνοιγμα keyboard
     LaunchedEffect(startMode) {
         delay(150)
         focusRequester.requestFocus()
@@ -106,6 +109,42 @@ fun LiveNotesEditorScreen(
         } else {
             isTyping = false
         }
+    }
+
+    // 🔹 ΟΤΑΝ έρχεται request από notification να πάμε σε συγκεκριμένη γραμμή
+    LaunchedEffect(reminderLineToFocus, currentNote?.id) {
+        val lineIndex = reminderLineToFocus
+        if (lineIndex == null || lineIndex < 0) return@LaunchedEffect
+
+        val text = textFieldValue.text
+        if (text.isEmpty()) {
+            onReminderFocusHandled()
+            return@LaunchedEffect
+        }
+
+        val lines = text.lines()
+        if (lineIndex >= lines.size) {
+            // Αν η γραμμή δεν υπάρχει πια, πάμε στο τέλος
+            textFieldValue = textFieldValue.copy(
+                selection = TextRange(text.length)
+            )
+            onReminderFocusHandled()
+            return@LaunchedEffect
+        }
+
+        // Υπολογισμός offset από αρχή μέχρι αρχή της συγκεκριμένης γραμμής
+        var offset = 0
+        for (i in 0 until lineIndex) {
+            offset += lines[i].length + 1 // +1 για το '\n'
+        }
+        val safeOffset = offset.coerceIn(0, text.length)
+
+        textFieldValue = textFieldValue.copy(
+            selection = TextRange(safeOffset)
+        )
+
+        // Ο TextField τυπικά θα κάνει scroll μόνος του στον cursor
+        onReminderFocusHandled()
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "wait_indicator")
@@ -368,7 +407,7 @@ fun LiveNotesEditorScreen(
                         fontFamily = FontFamily.SansSerif
                     )
                 },
-                // ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ: εδώ μπαίνει το highlight του @rmd
+                // Highlight μόνο του "@rmd"
                 visualTransformation = ReminderMarkerVisualTransformation(
                     markerColor = reminderMarkerColor
                 )
