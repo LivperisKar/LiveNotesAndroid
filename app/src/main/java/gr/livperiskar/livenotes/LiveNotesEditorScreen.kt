@@ -35,10 +35,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
@@ -161,6 +165,13 @@ fun LiveNotesEditorScreen(
         Color(0xFFE0AC00) // alert yellow
     } else {
         Color(0xFFE35506) // orange
+    }
+
+    // Χρώμα για το ίδιο το @rmd marker
+    val reminderMarkerColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
+        Color(0xFFE0AC00) // ίδιο με το bell / alert
+    } else {
+        Color(0xFFE35506)
     }
 
     val effectiveCursorColor = if (appTheme == AppTheme.LIVENOTES_DARK) {
@@ -356,8 +367,45 @@ fun LiveNotesEditorScreen(
                         fontSize = fontSize,
                         fontFamily = FontFamily.SansSerif
                     )
-                }
+                },
+                // ΠΟΛΥ ΣΗΜΑΝΤΙΚΟ: εδώ μπαίνει το highlight του @rmd
+                visualTransformation = ReminderMarkerVisualTransformation(
+                    markerColor = reminderMarkerColor
+                )
             )
         }
+    }
+}
+
+/**
+ * VisualTransformation που χρωματίζει ΜΟΝΟ τα "@rmd" στο κείμενο,
+ * χωρίς να αλλάζει το actual text (μόνο το rendering).
+ */
+class ReminderMarkerVisualTransformation(
+    private val markerColor: Color
+) : VisualTransformation {
+
+    override fun filter(text: AnnotatedString): androidx.compose.ui.text.input.TransformedText {
+        val source = text.text
+        val builder = AnnotatedString.Builder(text)
+
+        var index = source.indexOf("@rmd")
+        while (index >= 0) {
+            val end = index + 4
+            if (end <= source.length) {
+                builder.addStyle(
+                    style = SpanStyle(color = markerColor),
+                    start = index,
+                    end = end
+                )
+            }
+            index = source.indexOf("@rmd", startIndex = end)
+        }
+
+        val out = builder.toAnnotatedString()
+        return androidx.compose.ui.text.input.TransformedText(
+            out,
+            OffsetMapping.Identity
+        )
     }
 }

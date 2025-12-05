@@ -44,6 +44,9 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     // Parser για dd/MM/yyyy HH:mm
     private val reminderDateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
+    // noteId που θέλουμε να ανοίξει όταν είναι διαθέσιμα τα notes (π.χ. από notification tap)
+    private var pendingSelectNoteId: Long? = null
+
     init {
         val db = LiveNotesDatabase.getInstance(application)
         repository = NoteRepository(db.noteDao())
@@ -78,6 +81,10 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                         currentNote = newCurrent
                     )
                 }
+
+                // Αν υπάρχει pending επιλογή σημείωσης (π.χ. από notification),
+                // δοκίμασε να την ικανοποιήσεις τώρα που έχουμε notes.
+                trySelectPendingNote()
             }
         }
     }
@@ -209,6 +216,31 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
         val firstLine = content.lineSequence().firstOrNull()?.trim() ?: ""
         if (firstLine.isEmpty()) return ""
         return if (firstLine.length <= 60) firstLine else firstLine.substring(0, 57) + "…"
+    }
+
+    // ======================
+    //  Deep link από notification
+    // ======================
+
+    /** Καλείται από το MainActivity όταν ανοίγουμε από notification με συγκεκριμένο noteId. */
+    fun scheduleSelectNote(noteId: Long) {
+        if (noteId <= 0L) return
+        pendingSelectNoteId = noteId
+        trySelectPendingNote()
+    }
+
+    private fun trySelectPendingNote() {
+        val targetId = pendingSelectNoteId ?: return
+        val notes = _uiState.value.notes
+        val exists = notes.any { it.id == targetId }
+        if (!exists) {
+            // Δεν έχουμε ακόμα τη σημείωση στη λίστα (π.χ. δεν φόρτωσε η βάση)
+            return
+        }
+
+        // Χρησιμοποιούμε τη λογική του selectNote για να κρατήσουμε ένα σημείο αλήθειας
+        selectNote(targetId)
+        pendingSelectNoteId = null
     }
 
     // ======================

@@ -1,59 +1,56 @@
 package gr.livperiskar.livenotes
 
 import android.content.Context
-import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
 
-class ReminderScheduler(context: Context) {
+class ReminderScheduler(
+    context: Context
+) {
 
-    private val appContext = context.applicationContext
-    private val workManager = WorkManager.getInstance(appContext)
+    private val workManager = WorkManager.getInstance(context)
 
+    /**
+     * Συγχρονίζει τα reminders μιας συγκεκριμένης σημείωσης με το WorkManager.
+     *
+     * - Πρώτα ακυρώνει ό,τι παλιά jobs υπάρχουν για αυτό το noteId.
+     * - Μετά, για κάθε InlineReminder, προγραμματίζει ένα OneTimeWorkRequest.
+     */
     fun scheduleRemindersForNote(
         noteId: Long,
         reminders: List<InlineReminder>
     ) {
-        if (noteId <= 0L) return
-
         val tag = "note-reminders-$noteId"
 
-        // 1. Καθαρίζουμε παλιά work για αυτό το note (tag based)
+        // Ακύρωση όλων των παλιών για αυτό το note
         workManager.cancelAllWorkByTag(tag)
 
-        if (reminders.isEmpty()) {
-            return
-        }
+        if (reminders.isEmpty()) return
 
         val now = System.currentTimeMillis()
 
         reminders.forEach { reminder ->
             val delayMillis = reminder.triggerAtMillis - now
+            // Αν είναι ήδη στο παρελθόν ή ακριβώς τώρα, δεν έχει νόημα να το προγραμματίσουμε
             if (delayMillis <= 0L) {
-                // Στο παρελθόν ή τώρα – το αγνοούμε προς το παρόν
                 return@forEach
             }
 
-            val uniqueWorkName = "reminder_${reminder.noteId}_${reminder.lineIndex}"
-
-            val inputData = workDataOf(
-                ReminderWorker.KEY_NOTE_ID to reminder.noteId,
-                ReminderWorker.KEY_TEXT to reminder.reminderText
+            val data = workDataOf(
+                ReminderWorker.KEY_NOTE_ID to noteId,
+                ReminderWorker.KEY_TEXT to reminder.reminderText,
+                ReminderWorker.KEY_REMINDER_LINE_INDEX to reminder.lineIndex
             )
 
             val request = OneTimeWorkRequestBuilder<ReminderWorker>()
+                .setInputData(data)
                 .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
                 .addTag(tag)
-                .setInputData(inputData)
                 .build()
 
-            workManager.enqueueUniqueWork(
-                uniqueWorkName,
-                ExistingWorkPolicy.REPLACE,
-                request
-            )
+            workManager.enqueue(request)
         }
     }
 }

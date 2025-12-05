@@ -1,6 +1,7 @@
 package gr.livperiskar.livenotes
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,8 +25,7 @@ class MainActivity : ComponentActivity() {
     // Runtime permission για notifications (Android 13+)
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            // Εδώ μπορείς αν θέλεις να βάλεις Log / Toast
-            // Προς το παρόν δεν χρειάζεται κάτι άλλο
+            // Προαιρετικά: Log / Toast αν θέλεις να ξέρεις αν δόθηκε η άδεια
         }
 
     companion object {
@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_CURSOR_SCALE_DARK = 1.0f
         private val DEFAULT_INDICATOR_COLOR_DARK = 0xFFE0AC00.toInt() // yellow
         private const val DEFAULT_INDICATOR_SCALE_DARK = 1.0f
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +53,12 @@ class MainActivity : ComponentActivity() {
         // Android 13+ → ζητάμε ρητά άδεια για notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        // Αν ήρθαμε από notification, πάρε το noteId
+        val startNoteId = intent?.getLongExtra(ReminderWorker.EXTRA_NOTE_ID, -1L) ?: -1L
+        if (startNoteId > 0L) {
+            notesViewModel.scheduleSelectNote(startNoteId)
         }
 
         val initialTheme = loadThemeFromPrefs()
@@ -121,6 +128,17 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // Αν η Activity είναι ήδη ανοιχτή και έρθει νέο Intent (από notification tap)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        val noteId = intent.getLongExtra(ReminderWorker.EXTRA_NOTE_ID, -1L)
+        if (noteId > 0L) {
+            notesViewModel.scheduleSelectNote(noteId)
+        }
+    }
+
 
     // ---------- THEME PREFS ----------
 
